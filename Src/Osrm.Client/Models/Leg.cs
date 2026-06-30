@@ -18,10 +18,10 @@ namespace Osrm.Client.Models
         public double Duration { get; set; }
 
         [JsonPropertyName("steps")]
-        public RouteStep[] Steps { get; set; }
+        public RouteStep[] Steps { get; set; } = Array.Empty<RouteStep>();
 
         [JsonPropertyName("summary")]
-        public string Summary { get; set; }
+        public string Summary { get; set; } = string.Empty;
     
         [JsonPropertyName("weight")]
         public double Weight { get; set; }

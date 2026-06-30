@@ -1,10 +1,35 @@
 Osrm.Client
 ==========
-A Http client for OSRM for 5x API
+A modern .NET client for the OSRM 5.x HTTP API.
+
+## Target frameworks
+
+- `net9.0`
+- `netstandard2.0` for low-maintenance compatibility with older consumers
+
+## Build and test
+
+From the repository root:
+
+```bash
+dotnet restore Src/Osrm.Client.sln
+dotnet build Src/Osrm.Client.sln
+dotnet test Src/Osrm.Client.Tests/Osrm.Client.Tests.csproj
+dotnet pack Src/Osrm.Client/Osrm.Client.csproj -c Release
+```
+
+The test project is designed to run offline. Response tests use stubbed `HttpClient` responses instead of the public demo server.
 
 Forked from https://github.com/narfunikita/Osrm.Client - version 3.0.0.0
 
 ## Changes from forked version:
+
+#### v4.0.0
+  - Upgraded the package to modern SDK-style .NET targets with `net9.0` as the primary target.
+  - Added a `netstandard2.0` compatibility target without retaining legacy runtime-specific project structure.
+  - Replaced network-dependent response tests with deterministic HTTP stubs.
+  - Improved package/release metadata and repository automation for build, pack, and publish flows.
+  - Corrected OSRM waypoint and maneuver response coordinate mapping to preserve `Location(latitude, longitude)`.
 
 #### v3.5.0.1
   - Minor code clean-ups.

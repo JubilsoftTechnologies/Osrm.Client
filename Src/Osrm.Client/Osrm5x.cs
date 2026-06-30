@@ -213,26 +213,40 @@ namespace Osrm.Client
             return await Send<TripResponse>(TripServiceName, requestParams);
         }
 
-        protected async Task<T> Send<T>(string service, BaseRequest request) //string coordinatesStr, List<Tuple<string, string>> urlParams)
+        protected async Task<T> Send<T>(string service, BaseRequest request)
+            where T : class
         {
+            if (request is null)
+            {
+                throw new ArgumentNullException(nameof(request));
+            }
+
+            if (string.IsNullOrWhiteSpace(Url))
+            {
+                throw new InvalidOperationException("An OSRM server URL must be configured before sending a request.");
+            }
+
             var coordinatesStr = request.CoordinatesUrlPart;
             List<Tuple<string, string>> urlParams = request.UrlParams;
             var fullUrl = OsrmRequestBuilder.GetUrl(Url, service, Version, Profile, coordinatesStr, urlParams);
+            using var response = await Client.GetAsync(fullUrl).ConfigureAwait(false);
+            var responseBody = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
-            try
+            if (!response.IsSuccessStatusCode)
             {
-                string responseBody = await Client.GetStringAsync(fullUrl);
-
-                return await Task.FromResult(JsonSerializer.Deserialize<T>(responseBody));
+#if NET9_0_OR_GREATER
+                throw new HttpRequestException(
+                    $"OSRM request to '{fullUrl}' failed with status code {(int)response.StatusCode} ({response.StatusCode}). Response body: {responseBody}",
+                    null,
+                    response.StatusCode);
+#else
+                throw new HttpRequestException(
+                    $"OSRM request to '{fullUrl}' failed with status code {(int)response.StatusCode} ({response.StatusCode}). Response body: {responseBody}");
+#endif
             }
-            catch (HttpRequestException e)
-            {
-                Console.WriteLine("\nException Caught!");
-                Console.WriteLine("Message :{0} ", e.Message);
-                throw;
-            }
 
+            return JsonSerializer.Deserialize<T>(responseBody)
+                ?? throw new JsonException($"OSRM response for '{fullUrl}' could not be deserialized into {typeof(T).Name}.");
         }
-
     }
 }

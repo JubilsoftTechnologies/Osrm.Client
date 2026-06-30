@@ -10,8 +10,8 @@ namespace Osrm.Client.Models.Requests
     {
         public TableRequest()
         {
-            Sources = new uint[0];
-            Destinations = new uint[0];
+            Sources = Array.Empty<uint>();
+            Destinations = Array.Empty<uint>();
         }
 
         /// <summary>

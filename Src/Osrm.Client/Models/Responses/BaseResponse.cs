@@ -15,12 +15,12 @@ namespace Osrm.Client.Models.Responses
         /// The status code. 200 means successful, 207 means no route was found.
         /// </summary>
         [JsonPropertyName("code")]
-        public string Code { get; set; }
+        public string Code { get; set; } = string.Empty;
 
         /// <summary>
         /// (optional) can either be Found route between points or Cannot find route between points
         /// </summary>
         [JsonPropertyName("message")]
-        public string Message { get; set; }
+        public string? Message { get; set; }
     }
 }

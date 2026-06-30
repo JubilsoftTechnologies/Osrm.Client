@@ -1,13 +1,8 @@
 ﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Osrm.Client.Models
 {
-    public class Location //: System.Object
+    public class Location : IEquatable<Location>
     {
         public Location()
         {
@@ -23,22 +18,12 @@ namespace Osrm.Client.Models
 
         public double Longitude { get; set; }
 
-        public override bool Equals(System.Object obj)
+        public override bool Equals(object? obj)
         {
-            if (obj == null)
-            {
-                return false;
-            }
-
-            if (!(obj is Location p))
-            {
-                return false;
-            }
-
-            return (Latitude == p.Latitude) && (Longitude == p.Longitude);
+            return obj is Location other && Equals(other);
         }
 
-        public bool Equals(Location p)
+        public bool Equals(Location? p)
         {
             if (p is null)
             {
@@ -53,25 +38,22 @@ namespace Osrm.Client.Models
             return Latitude.GetHashCode() ^ Longitude.GetHashCode();
         }
 
-        public static bool operator ==(Location a, Location b)
+        public static bool operator ==(Location? a, Location? b)
         {
-            // If both are null, or both are same instance, return true.
             if (ReferenceEquals(a, b))
             {
                 return true;
             }
 
-            // If one is null, but not both, return false.
             if ((a is null) || (b is null))
             {
                 return false;
             }
 
-            // Return true if the fields match:
             return a.Latitude == b.Latitude && a.Longitude == b.Longitude;
         }
 
-        public static bool operator !=(Location a, Location b)
+        public static bool operator !=(Location? a, Location? b)
         {
             return !(a == b);
         }

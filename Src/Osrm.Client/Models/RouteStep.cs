@@ -18,30 +18,31 @@ namespace Osrm.Client.Models
         public double Duration { get; set; }
 
         [JsonPropertyName("geometry")]
-        public string GeometryStr { get; set; }
+        public string? GeometryStr { get; set; }
 
         public Location[] Geometry
         {
             get
             {
-                if (string.IsNullOrEmpty(GeometryStr))
+                var geometry = GeometryStr;
+                if (string.IsNullOrEmpty(geometry))
                 {
-                    return new Location[0];
+                    return Array.Empty<Location>();
                 }
 
-                return OsrmPolylineConverter.Decode(GeometryStr, 1E5)
+                return OsrmPolylineConverter.Decode(geometry!, 1E5)
                     .ToArray();
             }
         }
 
         [JsonPropertyName("maneuver")]
-        public StepManeuver Maneuver { get; set; }
+        public StepManeuver? Maneuver { get; set; }
 
         [JsonPropertyName("mode")]
-        public string Mode { get; set; }
+        public string? Mode { get; set; }
 
         [JsonPropertyName("name")]
-        public string Name { get; set; }
+        public string? Name { get; set; }
 
     }
 }

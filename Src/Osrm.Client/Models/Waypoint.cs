@@ -17,24 +17,26 @@ namespace Osrm.Client.Models
         /// Unique internal identifier of the segment (ephemeral, not constant over data updates) This can be used on subsequent request to significantly speed up the query and to connect multiple services. E.g. you can use the hint value obtained by the nearest query as hint values for route inputs.
         /// </summary>
         [JsonPropertyName("hint")]
-        public string Hint { get; set; }
+        public string? Hint { get; set; }
 
         [JsonPropertyName("location")]
-        public double[] LocationArr { get; set; }
+        public double[]? LocationArr { get; set; }
 
-        public Location Location
+        public Location? Location
         {
             get
             {
                 if (LocationArr == null)
+                {
                     return null;
+                }
 
-                return new Location(LocationArr[0], LocationArr[1]);
+                return new Location(LocationArr[1], LocationArr[0]);
             }
         }
 
         [JsonPropertyName("name")]
-        public string Name { get; set; }
+        public string? Name { get; set; }
 
         /// <summary>
         /// Match. Index to the Route object in matchings the sub-trace was matched to.
@@ -50,10 +52,5 @@ namespace Osrm.Client.Models
         /// </summary>
         [JsonPropertyName("waypoint_index")]
         public int? WaypointIndex { get; set; }
-
-        public Waypoint()
-        {
-            //LocationArr = new List<double>();
-        }
     }
 }

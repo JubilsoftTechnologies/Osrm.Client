@@ -8,8 +8,8 @@ namespace Osrm.Client.Models.Requests
 {
     public class TripRequest : BaseRequest
     {
-        protected const string DefaultGeometries = "polyline";
-        protected const string DefaultOverview = "simplified";
+        private const string DefaultGeometries = "polyline";
+        private const string DefaultOverview = "simplified";
 
         public TripRequest()
         {

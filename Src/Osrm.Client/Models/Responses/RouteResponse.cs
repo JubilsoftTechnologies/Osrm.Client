@@ -15,12 +15,12 @@ namespace Osrm.Client.Models.Responses
         /// Array of Waypoint objects representing all waypoints in order:
         /// </summary>
         [JsonPropertyName("waypoints")]
-        public Waypoint[] Waypoints { get; set; }
+        public Waypoint[] Waypoints { get; set; } = Array.Empty<Waypoint>();
 
         /// <summary>
         /// An array of Route objects, ordered by descending recommendation rank.
         /// </summary>
         [JsonPropertyName("routes")]
-        public Route[] Routes { get; set; }
+        public Route[] Routes { get; set; } = Array.Empty<Route>();
     }
 }

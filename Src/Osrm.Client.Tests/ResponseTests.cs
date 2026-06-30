@@ -1,135 +1,298 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Osrm.Client.Models;
-using System.Net.Http;
 using Osrm.Client.Models.Requests;
+using System.Net;
+using System.Net.Http;
+using System.Text;
 
 namespace Osrm.Client.Tests
 {
     [TestClass]
     public class ResponseTests
     {
-        protected Osrm5x osrm = new Osrm5x(new HttpClient(), "http://router.project-osrm.org/");
+        private static readonly Location[] RouteLocations =
+        {
+            new(52.503033, 13.420526),
+            new(52.516582, 13.429290),
+        };
 
         [TestMethod]
-        public void Route_Response()
+        public async Task Route_Response()
         {
-            var locations = new Location[] {
-                new Location(52.503033, 13.420526),
-                new Location(52.516582, 13.429290),
-            };
+            var osrm = CreateOsrmClient(
+                """
+                {
+                  "code": "Ok",
+                  "waypoints": [
+                    {
+                      "distance": 1.2,
+                      "hint": "hint-a",
+                      "location": [13.420526, 52.503033],
+                      "name": "Start"
+                    },
+                    {
+                      "distance": 1.8,
+                      "hint": "hint-b",
+                      "location": [13.429290, 52.516582],
+                      "name": "Finish"
+                    }
+                  ],
+                  "routes": [
+                    {
+                      "distance": 123.4,
+                      "duration": 56.7,
+                      "geometry": "_p~iF~ps|U_ulLnnqC_mqNvxq`@",
+                      "legs": [
+                        {
+                          "distance": 123.4,
+                          "duration": 56.7,
+                          "summary": "Sample leg",
+                          "weight": 56.7,
+                          "steps": [
+                            {
+                              "distance": 123.4,
+                              "duration": 56.7,
+                              "geometry": "_p~iF~ps|U_ulLnnqC_mqNvxq`@",
+                              "maneuver": {
+                                "bearing_after": 90,
+                                "bearing_before": 0,
+                                "location": [13.420526, 52.503033],
+                                "type": "turn",
+                                "modifier": "right"
+                              },
+                              "mode": "driving",
+                              "name": "Sample street"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """);
 
-            var result = osrm.Route(locations).GetAwaiter().GetResult();
+            var result = await osrm.Route(RouteLocations);
 
-            Assert.AreEqual<string>("Ok", result.Code);
+            Assert.AreEqual("Ok", result.Code);
             Assert.IsTrue(result.Routes.Length > 0);
             Assert.IsTrue(result.Waypoints.Length > 0);
             Assert.IsTrue(result.Routes[0].Legs.Length > 0);
-
-            var result2 = osrm.Route(new RouteRequest()
-            {
-                Coordinates = locations,
-                Alternative = false
-            }).GetAwaiter().GetResult();
-
-            Assert.AreEqual<string>("Ok", result2.Code);
-            Assert.IsTrue(result2.Routes.Length > 0);
-            Assert.IsTrue(result2.Waypoints.Length > 0);
-            Assert.IsTrue(result2.Routes[0].Legs.Length > 0);
-
-            var result3 = osrm.Route(new RouteRequest()
-            {
-                Coordinates = locations,
-                Alternative = true
-            }).GetAwaiter().GetResult();
-
-            Assert.AreEqual<string>("Ok", result3.Code);
-            Assert.IsTrue(result3.Routes.Length > 0);
-            Assert.IsTrue(result3.Waypoints.Length > 0);
-            Assert.IsTrue(result3.Routes[0].Legs.Length > 0);
+            Assert.AreEqual(52.503033, result.Waypoints[0].Location!.Latitude, 0.000001);
+            Assert.AreEqual(13.420526, result.Waypoints[0].Location.Longitude, 0.000001);
+            Assert.AreEqual(52.503033, result.Routes[0].Legs[0].Steps[0].Maneuver!.Location!.Latitude, 0.000001);
+            Assert.AreEqual(13.420526, result.Routes[0].Legs[0].Steps[0].Maneuver!.Location!.Longitude, 0.000001);
         }
 
         [TestMethod]
-        public void Table_Response()
+        public async Task Table_Response()
         {
-            var locations = new Location[] {
-                new Location(52.554070, 13.160621),
-                new Location(52.431272, 13.720654),
-                new Location(52.554070, 13.720654),
-                new Location(52.554070, 13.160621),
-            };
+            var osrm = CreateOsrmClient(
+                """
+                {
+                  "code": "Ok",
+                  "durations": [
+                    [0.0, 12.3],
+                    [12.3, 0.0]
+                  ],
+                  "sources": [
+                    { "distance": 0.0, "location": [13.160621, 52.554070], "name": "A" },
+                    { "distance": 0.0, "location": [13.720654, 52.431272], "name": "B" }
+                  ],
+                  "destinations": [
+                    { "distance": 0.0, "location": [13.160621, 52.554070], "name": "A" },
+                    { "distance": 0.0, "location": [13.720654, 52.431272], "name": "B" }
+                  ]
+                }
+                """);
 
-            var result = osrm.Table(locations).GetAwaiter().GetResult();
-            Assert.AreEqual<string>("Ok", result.Code);
-            Assert.AreEqual<int>(4, result.Durations.Length);
-            Assert.AreEqual<int>(4, result.Durations[0].Length);
-            Assert.AreEqual<int>(4, result.Durations[1].Length);
-            Assert.AreEqual<int>(4, result.Durations[2].Length);
-            Assert.AreEqual<int>(4, result.Durations[3].Length);
+            var result = await osrm.Table(
+                new TableRequest
+                {
+                    Coordinates =
+                    [
+                        new Location(52.554070, 13.160621),
+                        new Location(52.431272, 13.720654),
+                    ],
+                });
 
-            var srcAndDests = new Location[] {
-                new Location(52.554070, 13.160621),
-                new Location(52.431272, 13.720654),
-                new Location(52.554070, 13.720654),
-                new Location(52.554070, 13.160621),
-            };
-
-            var result2 = osrm.Table(new TableRequest()
-            {
-                Coordinates = srcAndDests,
-                Sources = new uint[] { 0 },
-                Destinations = new uint[] { 1, 2, 3 }
-            }).GetAwaiter().GetResult();
-
-            Assert.AreEqual<string>("Ok", result.Code);
-            Assert.AreEqual<int>(1, result2.Durations.Length);
-            Assert.AreEqual<int>(3, result2.Durations[0].Length);
+            Assert.AreEqual("Ok", result.Code);
+            Assert.AreEqual(2, result.Durations.Length);
+            Assert.AreEqual(2, result.Durations[0].Length);
+            Assert.AreEqual(52.554070, result.Sources[0].Location!.Latitude, 0.000001);
         }
 
         [TestMethod]
-        public void Match_Response()
+        public async Task Match_Response()
         {
-            var locations = new Location[] {
-                new Location(52.542648, 13.393252),
-                new Location(52.543079, 13.394780),
-                new Location(52.542107, 13.397389)
-            };
+            var osrm = CreateOsrmClient(
+                """
+                {
+                  "code": "Ok",
+                  "tracepoints": [
+                    { "distance": 1.0, "location": [13.393252, 52.542648], "name": "Trace A", "matchings_index": 0, "waypoint_index": 0 },
+                    null
+                  ],
+                  "matchings": [
+                    {
+                      "distance": 10.0,
+                      "duration": 20.0,
+                      "geometry": "_p~iF~ps|U_ulLnnqC_mqNvxq`@",
+                      "confidence": 0.9,
+                      "legs": [
+                        {
+                          "distance": 10.0,
+                          "duration": 20.0,
+                          "summary": "Matched leg",
+                          "weight": 20.0,
+                          "steps": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """);
 
-            var req = new MatchRequest()
-            {
-                Coordinates = locations,
-                Timestamps = new int[] { 1424684612, 1424684616, 1424684620 }
-            };
+            var result = await osrm.Match(
+                new MatchRequest
+                {
+                    Coordinates =
+                    [
+                        new Location(52.542648, 13.393252),
+                        new Location(52.543079, 13.394780),
+                        new Location(52.542107, 13.397389),
+                    ],
+                    Timestamps = [1424684612, 1424684616, 1424684620],
+                });
 
-            var result = osrm.Match(req).GetAwaiter().GetResult();
-
-            Assert.AreEqual<string>("Ok", result.Code);
+            Assert.AreEqual("Ok", result.Code);
             Assert.IsTrue(result.Matchings.Length > 0);
             Assert.IsTrue(result.Matchings[0].Legs.Length > 0);
             Assert.IsNotNull(result.Matchings[0].Confidence);
+            Assert.IsNull(result.Tracepoints[1]);
         }
 
         [TestMethod]
-        public void Nearest_Response()
+        public async Task Nearest_Response()
         {
-            var result = osrm.Nearest(new Location(52.4224, 13.333086)).GetAwaiter().GetResult();
+            var osrm = CreateOsrmClient(
+                """
+                {
+                  "code": "Ok",
+                  "waypoints": [
+                    {
+                      "distance": 0.1,
+                      "hint": "nearest-hint",
+                      "location": [13.333086, 52.4224],
+                      "name": "Nearest point"
+                    }
+                  ]
+                }
+                """);
 
-            Assert.AreEqual<string>("Ok", result.Code);
+            var result = await osrm.Nearest(new Location(52.4224, 13.333086));
+
+            Assert.AreEqual("Ok", result.Code);
             Assert.IsNotNull(result.Waypoints);
+            Assert.AreEqual(52.4224, result.Waypoints[0].Location!.Latitude, 0.000001);
         }
 
         [TestMethod]
-        public void Trip_Response()
+        public async Task Trip_Response()
         {
-            var locations = new Location[] {
-                new Location(52.503033, 13.420526),
-                new Location(52.516582, 13.429290),
-            };
+            var osrm = CreateOsrmClient(
+                """
+                {
+                  "code": "Ok",
+                  "waypoints": [
+                    { "distance": 0.1, "location": [13.420526, 52.503033], "name": "A", "trips_index": 0, "waypoint_index": 0 },
+                    { "distance": 0.1, "location": [13.429290, 52.516582], "name": "B", "trips_index": 0, "waypoint_index": 1 }
+                  ],
+                  "trips": [
+                    {
+                      "distance": 12.0,
+                      "duration": 34.0,
+                      "geometry": "_p~iF~ps|U_ulLnnqC_mqNvxq`@",
+                      "legs": [
+                        {
+                          "distance": 12.0,
+                          "duration": 34.0,
+                          "summary": "Trip leg",
+                          "weight": 34.0,
+                          "steps": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """);
 
-            var result =  osrm.Trip(locations).GetAwaiter().GetResult();
+            var result = await osrm.Trip(RouteLocations);
 
-            Assert.AreEqual<string>("Ok", result.Code);
-            Assert.AreEqual<int>(1, result.Trips.Length);
+            Assert.AreEqual("Ok", result.Code);
+            Assert.AreEqual(1, result.Trips.Length);
             Assert.IsTrue(result.Trips[0].Legs.Length > 0);
+        }
+
+        [TestMethod]
+        public async Task Route_Response_Throws_For_NonSuccess_Status()
+        {
+            var osrm = CreateOsrmClient(
+                """
+                {
+                  "code": "InvalidOptions",
+                  "message": "Invalid request"
+                }
+                """,
+                HttpStatusCode.BadRequest);
+
+            var ex = await CaptureHttpRequestExceptionAsync(() => osrm.Route(RouteLocations));
+
+            StringAssert.Contains(ex.Message, "400");
+            StringAssert.Contains(ex.Message, "route");
+        }
+
+        private static async Task<HttpRequestException> CaptureHttpRequestExceptionAsync(Func<Task> action)
+        {
+            try
+            {
+                await action();
+            }
+            catch (HttpRequestException ex)
+            {
+                return ex;
+            }
+
+            Assert.Fail("Expected an HttpRequestException.");
+            return null!;
+        }
+
+        private static Osrm5x CreateOsrmClient(string responseBody, HttpStatusCode statusCode = HttpStatusCode.OK)
+        {
+            var httpClient = new HttpClient(new StubHttpMessageHandler(responseBody, statusCode));
+            return new Osrm5x(httpClient, "https://router.project-osrm.org/");
+        }
+
+        private sealed class StubHttpMessageHandler : HttpMessageHandler
+        {
+            private readonly string responseBody;
+            private readonly HttpStatusCode statusCode;
+
+            public StubHttpMessageHandler(string responseBody, HttpStatusCode statusCode)
+            {
+                this.responseBody = responseBody;
+                this.statusCode = statusCode;
+            }
+
+            protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+            {
+                var response = new HttpResponseMessage(statusCode)
+                {
+                    RequestMessage = request,
+                    Content = new StringContent(responseBody, Encoding.UTF8, "application/json"),
+                };
+
+                return Task.FromResult(response);
+            }
         }
     }
 }

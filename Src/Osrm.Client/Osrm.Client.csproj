@@ -1,29 +1,48 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <TargetFrameworks>net9.0;netstandard2.0</TargetFrameworks>
+    <LangVersion>latestMajor</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
-    <Version>3.5.0</Version>
+    <Version>4.0.0</Version>
     <Authors>Scott Morrison</Authors>
     <Company>Jubilsoft Technologies LLC</Company>
     <PackageId>Osrm.Client.NetCore</PackageId>
     <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageTags>osrm;routing;maps;httpclient;geo;net9</PackageTags>
     <Product>Osrm.Client.NetCore</Product>
-    <Description>Http client for OSRM 5x API based on .Net Core</Description>
+    <Description>Modern .NET client for the OSRM 5.x HTTP API.</Description>
     <Copyright>Copyright (c) 2020 Jubilsoft Technologies, LLC</Copyright>
-    <RepositoryUrl>https://github.com/jubilee-scott/Osrm.Client</RepositoryUrl>
-    <PackageProjectUrl>https://github.com/jubilee-scott/Osrm.Client</PackageProjectUrl>
-    <AssemblyVersion>3.5.0.1</AssemblyVersion>
-    <FileVersion>3.5.0.1</FileVersion>
+    <RepositoryUrl>https://github.com/JubilsoftTechnologies/Osrm.Client</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageProjectUrl>https://github.com/JubilsoftTechnologies/Osrm.Client</PackageProjectUrl>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
     <Folder Include="Properties\" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <PackageReference Include="System.Text.Json" Version="9.0.17" />
+  </ItemGroup>
+
   <ItemGroup>
     <None Include="..\..\LICENSE.md">
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
+    </None>
+    <None Include="..\..\README.md">
       <Pack>True</Pack>
       <PackagePath></PackagePath>
     </None>

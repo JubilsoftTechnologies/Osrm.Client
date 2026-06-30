@@ -8,14 +8,14 @@ namespace Osrm.Client.Models.Requests
 {
     public class MatchRequest : BaseRequest
     {
-        protected const string DefaultGeometries = "polyline";
-        protected const string DefaultOverview = "simplified";
+        private const string DefaultGeometries = "polyline";
+        private const string DefaultOverview = "simplified";
 
         public MatchRequest()
         {
             Geometries = DefaultGeometries;
             Overview = DefaultOverview;
-            Timestamps = new int[0];
+            Timestamps = Array.Empty<int>();
         }
 
         /// <summary>

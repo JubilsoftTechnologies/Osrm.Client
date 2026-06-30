@@ -8,7 +8,7 @@ namespace Osrm.Client.Models.Requests
 {
     public class NearestRequest : BaseRequest
     {
-        protected const uint DefaultNumber = 1;
+        private const uint DefaultNumber = 1;
 
         public NearestRequest()
         {

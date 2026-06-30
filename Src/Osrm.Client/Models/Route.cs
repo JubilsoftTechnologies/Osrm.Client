@@ -17,24 +17,25 @@ namespace Osrm.Client.Models
         public double Duration { get; set; }
 
         [JsonPropertyName("geometry")]
-        public string GeometryStr { get; set; }
+        public string? GeometryStr { get; set; }
 
         public Location[] Geometry
         {
             get
             {
-                if (string.IsNullOrEmpty(GeometryStr))
+                var geometry = GeometryStr;
+                if (string.IsNullOrEmpty(geometry))
                 {
-                    return new Location[0];
+                    return Array.Empty<Location>();
                 }
 
-                return OsrmPolylineConverter.Decode(GeometryStr, 1E5)
+                return OsrmPolylineConverter.Decode(geometry!, 1E5)
                     .ToArray();
             }
         }
 
         [JsonPropertyName("legs")]
-        public RouteLeg[] Legs { get; set; }
+        public RouteLeg[] Legs { get; set; } = Array.Empty<RouteLeg>();
 
         /// <summary>
         /// Match. Confidence of the matching. float value between 0 and 1. 1 is very confident that the matching is correct.

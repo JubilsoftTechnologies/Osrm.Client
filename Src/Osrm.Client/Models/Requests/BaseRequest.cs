@@ -11,10 +11,10 @@ namespace Osrm.Client.Models.Requests
     {
         public BaseRequest()
         {
-            Coordinates = new Location[0];
-            Bearings = new Bearing[0];
-            Radiuses = new int[0];
-            Hints = new string[0];
+            Coordinates = Array.Empty<Location>();
+            Bearings = Array.Empty<Bearing>();
+            Radiuses = Array.Empty<int>();
+            Hints = Array.Empty<string>();
         }
 
         /// <summary>
@@ -56,11 +56,8 @@ namespace Osrm.Client.Models.Requests
                     var encodedLocs = OsrmPolylineConverter.Encode(Coordinates, 1E5);
                     return "polyline(" + encodedLocs + ")";
                 }
-                else
-                {
-                    return string.Join(";", Coordinates.Select(x => x.Longitude.ToString("F6", CultureInfo.InvariantCulture)
-                            + "," + x.Latitude.ToString("F6", CultureInfo.InvariantCulture)));
-                }
+                return string.Join(";", Coordinates.Select(x => x.Longitude.ToString("F6", CultureInfo.InvariantCulture)
+                        + "," + x.Latitude.ToString("F6", CultureInfo.InvariantCulture)));
             }
         }
 
