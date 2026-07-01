@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Osrm.Client.Models.Requests
 {
-    public class RouteRequest : BaseRequest
+    public class RouteRequest : BaseRequest, Osrm.Client.IHasGeometryFormat
     {
         private const string DefaultGeometries = "polyline";
         private const string DefaultOverview = "simplified";
@@ -17,6 +17,7 @@ namespace Osrm.Client.Models.Requests
             Geometries = DefaultGeometries;
             Overview = DefaultOverview;
             ContinueStraight = DefaultContinueStraight;
+            Waypoints = Array.Empty<uint>();
         }
 
         /// <summary>
@@ -26,10 +27,21 @@ namespace Osrm.Client.Models.Requests
         public bool Alternative { get; set; }
 
         /// <summary>
+        /// Searches for up to the provided number of alternative routes.
+        /// </summary>
+        public int? AlternativeCount { get; set; }
+
+        /// <summary>
         /// Return route steps for each route leg
         /// true, false (default)
         /// </summary>
         public bool Steps { get; set; }
+
+        /// <summary>
+        /// Returns additional metadata for each coordinate along the route geometry.
+        /// true, false, nodes, distance, duration, datasources, weight, speed
+        /// </summary>
+        public string? Annotations { get; set; }
 
         /// <summary>
         /// Returned route geometry format (influences overview and per step)
@@ -49,18 +61,33 @@ namespace Osrm.Client.Models.Requests
         /// </summary>
         public string ContinueStraight { get; set; }
 
+        /// <summary>
+        /// Treats the provided input indices as waypoints in the returned route.
+        /// </summary>
+        public uint[] Waypoints { get; set; }
+
         public override List<Tuple<string, string>> UrlParams
         {
             get
             {
                 var urlParams = new List<Tuple<string, string>>(BaseUrlParams);
 
+                if (AlternativeCount.HasValue)
+                {
+                    urlParams.AddStringParameter("alternatives", AlternativeCount.Value.ToString());
+                }
+                else
+                {
+                    urlParams.AddBoolParameter("alternatives", Alternative, false);
+                }
+
                 urlParams
-                    .AddBoolParameter("alternatives", Alternative, false)
                     .AddBoolParameter("steps", Steps, false)
+                    .AddStringParameter("annotations", Annotations)
                     .AddStringParameter("geometries", Geometries, () => Geometries != DefaultGeometries)
                     .AddStringParameter("overview", Overview, () => Overview != DefaultOverview)
-                    .AddStringParameter("continue_straight", ContinueStraight, () => ContinueStraight != DefaultContinueStraight);
+                    .AddStringParameter("continue_straight", ContinueStraight, () => ContinueStraight != DefaultContinueStraight)
+                    .AddParams("waypoints", Waypoints.Select(x => x.ToString()).ToArray());
 
                 return urlParams;
             }
@@ -70,6 +97,12 @@ namespace Osrm.Client.Models.Requests
         {
             ValidateCoordinateCount(2);
             ValidateOptionalParameterLengths();
+            ValidateCoordinateIndexes(Waypoints, nameof(Waypoints));
+
+            if (AlternativeCount.HasValue && AlternativeCount.Value <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(AlternativeCount), AlternativeCount.Value, "AlternativeCount must be greater than zero.");
+            }
         }
     }
 }

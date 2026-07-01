@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 namespace Osrm.Client.Models.Responses
 {
 
-    public class MatchResponse : BaseResponse
+    public class MatchResponse : BaseResponse, Osrm.Client.IGeometryFormatAware
     {
         /// <summary>
         /// Array of Ẁaypoint objects representing all points of the trace in order.
@@ -20,5 +20,13 @@ namespace Osrm.Client.Models.Responses
 
         [JsonPropertyName("matchings")]
         public Route[] Matchings { get; set; } = Array.Empty<Route>();
+
+        void Osrm.Client.IGeometryFormatAware.SetGeometryFormat(string geometryFormat)
+        {
+            foreach (var route in Matchings)
+            {
+                ((Osrm.Client.IGeometryFormatAware)route).SetGeometryFormat(geometryFormat);
+            }
+        }
     }
 }

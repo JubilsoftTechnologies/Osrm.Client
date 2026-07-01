@@ -265,8 +265,11 @@ namespace Osrm.Client
 #endif
                 }
 
-                return JsonSerializer.Deserialize<T>(responseBody)
+                var result = JsonSerializer.Deserialize<T>(responseBody)
                     ?? throw new JsonException($"OSRM response for '{fullUrl}' could not be deserialized into {typeof(T).Name}.");
+
+                ApplyGeometryFormat(result, request);
+                return result;
             }
             catch (OperationCanceledException ex) when (timeoutCts?.IsCancellationRequested == true)
             {
@@ -282,6 +285,17 @@ namespace Osrm.Client
             }
 
             return new CancellationTokenSource(TimeSpan.FromMilliseconds(Timeout.Value));
+        }
+
+        private static void ApplyGeometryFormat<T>(T response, BaseRequest request)
+            where T : class
+        {
+            if (response is not IGeometryFormatAware geometryAware || request is not IHasGeometryFormat geometryRequest)
+            {
+                return;
+            }
+
+            geometryAware.SetGeometryFormat(geometryRequest.Geometries);
         }
     }
 }

@@ -1,15 +1,13 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.Serialization;
-using System.Text;
+using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Threading.Tasks;
 
 namespace Osrm.Client.Models
 {
-    public class Route
+    public class Route : Osrm.Client.IGeometryFormatAware
     {
+        private string geometryFormat = "polyline";
+
         [JsonPropertyName("distance")]
         public double Distance { get; set; }
 
@@ -17,30 +15,43 @@ namespace Osrm.Client.Models
         public double Duration { get; set; }
 
         [JsonPropertyName("geometry")]
-        public string? GeometryStr { get; set; }
+        public JsonElement RawGeometry { get; set; }
 
+        [JsonIgnore]
+        public string? GeometryStr => Osrm.Client.OsrmGeometryParser.GetEncodedGeometry(RawGeometry);
+
+        [JsonIgnore]
         public Location[] Geometry
         {
             get
             {
-                var geometry = GeometryStr;
-                if (string.IsNullOrEmpty(geometry))
-                {
-                    return Array.Empty<Location>();
-                }
-
-                return OsrmPolylineConverter.Decode(geometry!, 1E5)
-                    .ToArray();
+                return Osrm.Client.OsrmGeometryParser.GetLocations(RawGeometry, geometryFormat);
             }
         }
 
         [JsonPropertyName("legs")]
         public RouteLeg[] Legs { get; set; } = Array.Empty<RouteLeg>();
 
+        [JsonPropertyName("weight")]
+        public double Weight { get; set; }
+
+        [JsonPropertyName("weight_name")]
+        public string? WeightName { get; set; }
+
         /// <summary>
         /// Match. Confidence of the matching. float value between 0 and 1. 1 is very confident that the matching is correct.
         /// </summary>
         [JsonPropertyName("confidence")]
         public float? Confidence { get; set; }
+
+        void Osrm.Client.IGeometryFormatAware.SetGeometryFormat(string geometryFormat)
+        {
+            this.geometryFormat = geometryFormat;
+
+            foreach (var leg in Legs)
+            {
+                ((Osrm.Client.IGeometryFormatAware)leg).SetGeometryFormat(geometryFormat);
+            }
+        }
     }
 }

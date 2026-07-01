@@ -38,6 +38,9 @@ namespace Osrm.Client.Models
         [JsonPropertyName("name")]
         public string? Name { get; set; }
 
+        [JsonPropertyName("nodes")]
+        public ulong[] Nodes { get; set; } = Array.Empty<ulong>();
+
         /// <summary>
         /// Match. Index to the Route object in matchings the sub-trace was matched to.
         /// </summary>
@@ -52,5 +55,8 @@ namespace Osrm.Client.Models
         /// </summary>
         [JsonPropertyName("waypoint_index")]
         public int? WaypointIndex { get; set; }
+
+        [JsonPropertyName("alternatives_count")]
+        public int? AlternativesCount { get; set; }
     }
 }

@@ -55,6 +55,42 @@ namespace Osrm.Client.Tests
         }
 
         [TestMethod]
+        public void RouteRequest_GeneralOptions_Url()
+        {
+            var r = new RouteRequest
+            {
+                Coordinates = locations,
+                GenerateHints = false,
+                Approaches = new[] { "curb", string.Empty },
+                Exclude = new[] { "motorway", "toll" },
+                Snapping = "any",
+                SkipWaypoints = true
+            };
+
+            CollectionAssert.AreEqual(new[] { "false" }, ParamValues(r.UrlParams, "generate_hints"));
+            CollectionAssert.AreEqual(new[] { "curb;" }, ParamValues(r.UrlParams, "approaches"));
+            CollectionAssert.AreEqual(new[] { "motorway,toll" }, ParamValues(r.UrlParams, "exclude"));
+            CollectionAssert.AreEqual(new[] { "any" }, ParamValues(r.UrlParams, "snapping"));
+            CollectionAssert.AreEqual(new[] { "true" }, ParamValues(r.UrlParams, "skip_waypoints"));
+        }
+
+        [TestMethod]
+        public void RouteRequest_AdvancedOptions_Url()
+        {
+            var r = new RouteRequest
+            {
+                Coordinates = matchLocations,
+                AlternativeCount = 3,
+                Annotations = "distance,duration",
+                Waypoints = new uint[] { 0, 2 }
+            };
+
+            CollectionAssert.AreEqual(new[] { "3" }, ParamValues(r.UrlParams, "alternatives"));
+            CollectionAssert.AreEqual(new[] { "distance,duration" }, ParamValues(r.UrlParams, "annotations"));
+            CollectionAssert.AreEqual(new[] { "0;2" }, ParamValues(r.UrlParams, "waypoints"));
+        }
+
+        [TestMethod]
         public void TableRequest_Url()
         {
             var r = new TableRequest
@@ -74,6 +110,24 @@ namespace Osrm.Client.Tests
             var dstParams = ParamValues(r.UrlParams, "destinations");
             Assert.AreEqual<int>(1, dstParams.Length);
             Assert.IsTrue(dstParams.Contains("1"));
+        }
+
+        [TestMethod]
+        public void TableRequest_AdvancedOptions_Url()
+        {
+            var r = new TableRequest
+            {
+                Coordinates = locations,
+                Annotations = "distance,duration",
+                FallbackSpeed = 12.5,
+                FallbackCoordinate = "snapped",
+                ScaleFactor = 1.5
+            };
+
+            CollectionAssert.AreEqual(new[] { "distance,duration" }, ParamValues(r.UrlParams, "annotations"));
+            CollectionAssert.AreEqual(new[] { "12.5" }, ParamValues(r.UrlParams, "fallback_speed"));
+            CollectionAssert.AreEqual(new[] { "snapped" }, ParamValues(r.UrlParams, "fallback_coordinate"));
+            CollectionAssert.AreEqual(new[] { "1.5" }, ParamValues(r.UrlParams, "scale_factor"));
         }
 
         [TestMethod]
@@ -104,6 +158,24 @@ namespace Osrm.Client.Tests
             Assert.IsTrue(tParams[0].Contains("1424684612"));
             Assert.IsTrue(tParams[0].Contains("1424684616"));
             Assert.IsTrue(tParams[0].Contains("142468462"));
+        }
+
+        [TestMethod]
+        public void MatchRequest_AdvancedOptions_Url()
+        {
+            var r = new MatchRequest
+            {
+                Coordinates = matchLocations,
+                Annotations = "nodes",
+                Gaps = "ignore",
+                Tidy = true,
+                Waypoints = new uint[] { 0, 2 }
+            };
+
+            CollectionAssert.AreEqual(new[] { "nodes" }, ParamValues(r.UrlParams, "annotations"));
+            CollectionAssert.AreEqual(new[] { "ignore" }, ParamValues(r.UrlParams, "gaps"));
+            CollectionAssert.AreEqual(new[] { "true" }, ParamValues(r.UrlParams, "tidy"));
+            CollectionAssert.AreEqual(new[] { "0;2" }, ParamValues(r.UrlParams, "waypoints"));
         }
 
         [TestMethod]
@@ -146,6 +218,24 @@ namespace Osrm.Client.Tests
 
             //Assert.AreEqual<int>(1, ParamValues(r.UrlParams, "overview").Length);
             //Assert.AreEqual<string>("simplified", ParamValues(r.UrlParams, "overview")[0]);
+        }
+
+        [TestMethod]
+        public void TripRequest_AdvancedOptions_Url()
+        {
+            var r = new TripRequest
+            {
+                Coordinates = locations,
+                Roundtrip = false,
+                Source = "first",
+                Destination = "last",
+                Annotations = "speed"
+            };
+
+            CollectionAssert.AreEqual(new[] { "false" }, ParamValues(r.UrlParams, "roundtrip"));
+            CollectionAssert.AreEqual(new[] { "first" }, ParamValues(r.UrlParams, "source"));
+            CollectionAssert.AreEqual(new[] { "last" }, ParamValues(r.UrlParams, "destination"));
+            CollectionAssert.AreEqual(new[] { "speed" }, ParamValues(r.UrlParams, "annotations"));
         }
     }
 }

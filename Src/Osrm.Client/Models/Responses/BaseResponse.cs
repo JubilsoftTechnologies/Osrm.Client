@@ -22,5 +22,8 @@ namespace Osrm.Client.Models.Responses
         /// </summary>
         [JsonPropertyName("message")]
         public string? Message { get; set; }
+
+        [JsonPropertyName("data_version")]
+        public string? DataVersion { get; set; }
     }
 }

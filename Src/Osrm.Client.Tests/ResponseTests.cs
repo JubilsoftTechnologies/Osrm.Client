@@ -23,12 +23,14 @@ namespace Osrm.Client.Tests
                 """
                 {
                   "code": "Ok",
+                  "data_version": "2025-07-01T00:00:00Z",
                   "waypoints": [
                     {
                       "distance": 1.2,
                       "hint": "hint-a",
                       "location": [13.420526, 52.503033],
-                      "name": "Start"
+                      "name": "Start",
+                      "nodes": [2264199819, 0]
                     },
                     {
                       "distance": 1.8,
@@ -41,6 +43,8 @@ namespace Osrm.Client.Tests
                     {
                       "distance": 123.4,
                       "duration": 56.7,
+                      "weight": 60.1,
+                      "weight_name": "duration",
                       "geometry": "_p~iF~ps|U_ulLnnqC_mqNvxq`@",
                       "legs": [
                         {
@@ -48,10 +52,22 @@ namespace Osrm.Client.Tests
                           "duration": 56.7,
                           "summary": "Sample leg",
                           "weight": 56.7,
+                          "annotation": {
+                            "distance": [10.0, 20.0],
+                            "duration": [15.0, 25.0],
+                            "datasources": [0, 1],
+                            "nodes": [49772551, 49772552],
+                            "weight": [15.0, 25.0],
+                            "speed": [0.7, 0.8],
+                            "metadata": {
+                              "datasource_names": ["lua profile", "traffic"]
+                            }
+                          },
                           "steps": [
                             {
                               "distance": 123.4,
                               "duration": 56.7,
+                              "weight": 57.0,
                               "geometry": "_p~iF~ps|U_ulLnnqC_mqNvxq`@",
                               "maneuver": {
                                 "bearing_after": 90,
@@ -60,8 +76,27 @@ namespace Osrm.Client.Tests
                                 "type": "turn",
                                 "modifier": "right"
                               },
+                              "ref": "B2",
+                              "pronunciation": "za:mpl",
+                              "destinations": "City Center",
+                              "exits": "12A",
                               "mode": "driving",
-                              "name": "Sample street"
+                              "name": "Sample street",
+                              "intersections": [
+                                {
+                                  "location": [13.420526, 52.503033],
+                                  "bearings": [0, 90, 180],
+                                  "classes": ["toll"],
+                                  "entry": [true, true, false],
+                                  "out": 1,
+                                  "lanes": [
+                                    { "indications": ["straight"], "valid": true }
+                                  ]
+                                }
+                              ],
+                              "rotary_name": "Sample Rotary",
+                              "rotary_pronunciation": "saem-pul",
+                              "driving_side": "right"
                             }
                           ]
                         }
@@ -74,13 +109,29 @@ namespace Osrm.Client.Tests
             var result = await osrm.Route(RouteLocations);
 
             Assert.AreEqual("Ok", result.Code);
+            Assert.AreEqual("2025-07-01T00:00:00Z", result.DataVersion);
             Assert.IsTrue(result.Routes.Length > 0);
             Assert.IsTrue(result.Waypoints.Length > 0);
             Assert.IsTrue(result.Routes[0].Legs.Length > 0);
             Assert.AreEqual(52.503033, result.Waypoints[0].Location!.Latitude, 0.000001);
             Assert.AreEqual(13.420526, result.Waypoints[0].Location!.Longitude, 0.000001);
+            CollectionAssert.AreEqual(new ulong[] { 2264199819, 0 }, result.Waypoints[0].Nodes);
             Assert.AreEqual(52.503033, result.Routes[0].Legs[0].Steps[0].Maneuver!.Location!.Latitude, 0.000001);
             Assert.AreEqual(13.420526, result.Routes[0].Legs[0].Steps[0].Maneuver!.Location!.Longitude, 0.000001);
+            Assert.AreEqual(60.1, result.Routes[0].Weight, 0.000001);
+            Assert.AreEqual("duration", result.Routes[0].WeightName);
+            Assert.AreEqual(57.0, result.Routes[0].Legs[0].Steps[0].Weight, 0.000001);
+            Assert.AreEqual("B2", result.Routes[0].Legs[0].Steps[0].Ref);
+            Assert.AreEqual("City Center", result.Routes[0].Legs[0].Steps[0].Destinations);
+            Assert.AreEqual("12A", result.Routes[0].Legs[0].Steps[0].Exits);
+            Assert.AreEqual("Sample Rotary", result.Routes[0].Legs[0].Steps[0].RotaryName);
+            Assert.AreEqual("right", result.Routes[0].Legs[0].Steps[0].DrivingSide);
+            Assert.AreEqual(1, result.Routes[0].Legs[0].Steps[0].Intersections.Length);
+            Assert.AreEqual(52.503033, result.Routes[0].Legs[0].Steps[0].Intersections[0].Location!.Latitude, 0.000001);
+            Assert.AreEqual(1, result.Routes[0].Legs[0].Steps[0].Intersections[0].Lanes.Length);
+            CollectionAssert.AreEqual(
+                new[] { "lua profile", "traffic" },
+                result.Routes[0].Legs[0].Annotation!.Metadata!.DatasourceNames);
         }
 
         [TestMethod]
@@ -90,9 +141,17 @@ namespace Osrm.Client.Tests
                 """
                 {
                   "code": "Ok",
+                  "data_version": "2025-07-01T00:00:00Z",
                   "durations": [
                     [0.0, 12.3],
-                    [12.3, 0.0]
+                    [null, 0.0]
+                  ],
+                  "distances": [
+                    [0.0, 1200.5],
+                    [null, 0.0]
+                  ],
+                  "fallback_speed_cells": [
+                    [1, 0]
                   ],
                   "sources": [
                     { "distance": 0.0, "location": [13.160621, 52.554070], "name": "A" },
@@ -118,6 +177,12 @@ namespace Osrm.Client.Tests
             Assert.AreEqual("Ok", result.Code);
             Assert.AreEqual(2, result.Durations.Length);
             Assert.AreEqual(2, result.Durations[0].Length);
+            Assert.AreEqual("2025-07-01T00:00:00Z", result.DataVersion);
+            Assert.IsNotNull(result.Distances[0][1]);
+            Assert.AreEqual(1200.5, result.Distances[0][1]!.Value, 0.000001);
+            Assert.IsNull(result.Durations[1][0]);
+            Assert.IsNull(result.Distances[1][0]);
+            CollectionAssert.AreEqual(new uint[] { 1, 0 }, result.FallbackSpeedCells[0]);
             Assert.AreEqual(52.554070, result.Sources[0].Location!.Latitude, 0.000001);
         }
 
@@ -129,7 +194,7 @@ namespace Osrm.Client.Tests
                 {
                   "code": "Ok",
                   "tracepoints": [
-                    { "distance": 1.0, "location": [13.393252, 52.542648], "name": "Trace A", "matchings_index": 0, "waypoint_index": 0 },
+                    { "distance": 1.0, "location": [13.393252, 52.542648], "name": "Trace A", "matchings_index": 0, "waypoint_index": 0, "alternatives_count": 2 },
                     null
                   ],
                   "matchings": [
@@ -168,6 +233,7 @@ namespace Osrm.Client.Tests
             Assert.IsTrue(result.Matchings.Length > 0);
             Assert.IsTrue(result.Matchings[0].Legs.Length > 0);
             Assert.IsNotNull(result.Matchings[0].Confidence);
+            Assert.AreEqual(2, result.Tracepoints[0]!.AlternativesCount);
             Assert.IsNull(result.Tracepoints[1]);
         }
 
@@ -211,7 +277,7 @@ namespace Osrm.Client.Tests
                     {
                       "distance": 12.0,
                       "duration": 34.0,
-                      "geometry": "_p~iF~ps|U_ulLnnqC_mqNvxq`@",
+                      "geometry": "q~occB{}brXymYwbP",
                       "legs": [
                         {
                           "distance": 12.0,
@@ -226,11 +292,87 @@ namespace Osrm.Client.Tests
                 }
                 """);
 
-            var result = await osrm.Trip(RouteLocations);
+            var result = await osrm.Trip(new TripRequest
+            {
+                Coordinates = RouteLocations,
+                Geometries = "polyline6"
+            });
 
             Assert.AreEqual("Ok", result.Code);
             Assert.AreEqual(1, result.Trips.Length);
             Assert.IsTrue(result.Trips[0].Legs.Length > 0);
+            Assert.AreEqual(2, result.Trips[0].Geometry.Length);
+            Assert.AreEqual(52.503033, result.Trips[0].Geometry[0].Latitude, 0.000001);
+            Assert.AreEqual(13.429290, result.Trips[0].Geometry[1].Longitude, 0.000001);
+        }
+
+        [TestMethod]
+        public async Task Route_Response_Parses_GeoJson_Geometry()
+        {
+            var osrm = CreateOsrmClient(
+                """
+                {
+                  "code": "Ok",
+                  "waypoints": [
+                    { "distance": 0.0, "location": [13.420526, 52.503033], "name": "A" },
+                    { "distance": 0.0, "location": [13.429290, 52.516582], "name": "B" }
+                  ],
+                  "routes": [
+                    {
+                      "distance": 10.0,
+                      "duration": 20.0,
+                      "geometry": {
+                        "type": "LineString",
+                        "coordinates": [
+                          [13.420526, 52.503033],
+                          [13.429290, 52.516582]
+                        ]
+                      },
+                      "legs": [
+                        {
+                          "distance": 10.0,
+                          "duration": 20.0,
+                          "summary": "GeoJson leg",
+                          "weight": 20.0,
+                          "steps": [
+                            {
+                              "distance": 10.0,
+                              "duration": 20.0,
+                              "geometry": {
+                                "type": "LineString",
+                                "coordinates": [
+                                  [13.420526, 52.503033],
+                                  [13.429290, 52.516582]
+                                ]
+                              },
+                              "maneuver": {
+                                "bearing_after": 90,
+                                "bearing_before": 0,
+                                "location": [13.420526, 52.503033],
+                                "type": "turn",
+                                "modifier": "right"
+                              },
+                              "mode": "driving",
+                              "name": "GeoJson street"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """);
+
+            var result = await osrm.Route(new RouteRequest
+            {
+                Coordinates = RouteLocations,
+                Geometries = "geojson"
+            });
+
+            Assert.AreEqual(2, result.Routes[0].Geometry.Length);
+            Assert.AreEqual(52.503033, result.Routes[0].Geometry[0].Latitude, 0.000001);
+            Assert.AreEqual(13.429290, result.Routes[0].Legs[0].Steps[0].Geometry[1].Longitude, 0.000001);
+            Assert.IsNull(result.Routes[0].GeometryStr);
         }
 
         [TestMethod]

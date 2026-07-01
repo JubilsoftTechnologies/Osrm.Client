@@ -7,12 +7,18 @@ namespace Osrm.Client.Models.Requests
 {
     public abstract class BaseRequest
     {
+        private const string DefaultSnapping = "default";
+
         public BaseRequest()
         {
             Coordinates = Array.Empty<Location>();
             Bearings = Array.Empty<Bearing>();
             Radiuses = Array.Empty<int>();
             Hints = Array.Empty<string>();
+            Approaches = Array.Empty<string>();
+            Exclude = Array.Empty<string>();
+            GenerateHints = true;
+            Snapping = DefaultSnapping;
         }
 
         /// <summary>
@@ -40,6 +46,35 @@ namespace Osrm.Client.Models.Requests
         /// </summary>
         public string[] Hints { get; set; }
 
+        /// <summary>
+        /// Adds hint generation to the response.
+        /// true (default), false
+        /// </summary>
+        public bool GenerateHints { get; set; }
+
+        /// <summary>
+        /// Restricts the direction on the road network at a waypoint relative to the input coordinate.
+        /// curb, opposite, unrestricted (default)
+        /// </summary>
+        public string[] Approaches { get; set; }
+
+        /// <summary>
+        /// Additive list of classes to avoid.
+        /// </summary>
+        public string[] Exclude { get; set; }
+
+        /// <summary>
+        /// Controls whether snapping avoids is_startpoint edges or allows any edge.
+        /// default (default), any
+        /// </summary>
+        public string Snapping { get; set; }
+
+        /// <summary>
+        /// Removes waypoints from the response.
+        /// true, false (default)
+        /// </summary>
+        public bool SkipWaypoints { get; set; }
+
         public string CoordinatesUrlPart
         {
             get
@@ -65,7 +100,12 @@ namespace Osrm.Client.Models.Requests
                 urlParams
                     .AddParams("bearings", Bearings.Select(x => x.Item1 + "," + x.Item2).ToArray())
                     .AddParams("radiuses", Radiuses.Select(x => x.ToString()).ToArray())
-                    .AddParams("hints", Hints);
+                    .AddParams("hints", Hints)
+                    .AddBoolParameter("generate_hints", GenerateHints, true)
+                    .AddParams("approaches", Approaches)
+                    .AddCsvParameter("exclude", Exclude)
+                    .AddStringParameter("snapping", Snapping, () => Snapping != DefaultSnapping)
+                    .AddBoolParameter("skip_waypoints", SkipWaypoints, false);
 
                 return urlParams;
             }
@@ -75,6 +115,23 @@ namespace Osrm.Client.Models.Requests
         {
             ValidateCoordinateCount(1);
             ValidateOptionalParameterLengths();
+
+            if (Approaches is null)
+            {
+                throw new ArgumentNullException(nameof(Approaches), "Approaches cannot be null.");
+            }
+
+            ValidateOptionalParameterLength(Approaches, nameof(Approaches));
+
+            if (Exclude is null)
+            {
+                throw new ArgumentNullException(nameof(Exclude), "Exclude cannot be null.");
+            }
+
+            if (string.IsNullOrWhiteSpace(Snapping))
+            {
+                throw new ArgumentException("Snapping cannot be null or empty.", nameof(Snapping));
+            }
         }
 
         protected void ValidateCoordinateCount(int minimumCount, int? maximumCount = null)

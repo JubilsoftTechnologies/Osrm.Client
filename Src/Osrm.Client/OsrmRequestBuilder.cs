@@ -68,5 +68,15 @@ namespace Osrm.Client
 
             return urlParams;
         }
+
+        public static List<Tuple<string, string>> AddCsvParameter(this List<Tuple<string, string>> urlParams, string urlKey, string[]? values)
+        {
+            if (values != null && values.Length > 0)
+            {
+                urlParams.Add(new Tuple<string, string>(urlKey, string.Join(",", values)));
+            }
+
+            return urlParams;
+        }
     }
 }

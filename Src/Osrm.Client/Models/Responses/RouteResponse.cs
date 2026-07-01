@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 namespace Osrm.Client.Models.Responses
 {
 
-    public class RouteResponse : BaseResponse
+    public class RouteResponse : BaseResponse, Osrm.Client.IGeometryFormatAware
     {
         /// <summary>
         /// Array of Waypoint objects representing all waypoints in order:
@@ -22,5 +22,13 @@ namespace Osrm.Client.Models.Responses
         /// </summary>
         [JsonPropertyName("routes")]
         public Route[] Routes { get; set; } = Array.Empty<Route>();
+
+        void Osrm.Client.IGeometryFormatAware.SetGeometryFormat(string geometryFormat)
+        {
+            foreach (var route in Routes)
+            {
+                ((Osrm.Client.IGeometryFormatAware)route).SetGeometryFormat(geometryFormat);
+            }
+        }
     }
 }
