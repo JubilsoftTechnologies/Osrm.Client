@@ -237,5 +237,18 @@ namespace Osrm.Client.Tests
             CollectionAssert.AreEqual(new[] { "last" }, ParamValues(r.UrlParams, "destination"));
             CollectionAssert.AreEqual(new[] { "speed" }, ParamValues(r.UrlParams, "annotations"));
         }
+
+        [TestMethod]
+        public void TripRequest_Annotate_Compatibility_Uses_Annotations_Key()
+        {
+            var r = new TripRequest
+            {
+                Coordinates = locations,
+                Annotate = true
+            };
+
+            CollectionAssert.AreEqual(new[] { "true" }, ParamValues(r.UrlParams, "annotations"));
+            Assert.AreEqual(0, ParamValues(r.UrlParams, "annotate").Length);
+        }
     }
 }

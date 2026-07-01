@@ -96,7 +96,7 @@ namespace Osrm.Client.Models.Requests
         internal override void Validate()
         {
             ValidateCoordinateCount(2);
-            ValidateOptionalParameterLengths();
+            base.Validate();
             ValidateCoordinateIndexes(Waypoints, nameof(Waypoints));
 
             if (AlternativeCount.HasValue && AlternativeCount.Value <= 0)

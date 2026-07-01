@@ -444,6 +444,100 @@ namespace Osrm.Client.Tests
         }
 
         [TestMethod]
+        public async Task Route_Response_Throws_For_Invalid_AlternativeCount()
+        {
+            var osrm = CreateOsrmClient("""{"code":"Ok","waypoints":[],"routes":[]}""");
+            var ex = await CaptureExceptionAsync<ArgumentOutOfRangeException>(() => osrm.Route(
+                new RouteRequest
+                {
+                    Coordinates = RouteLocations,
+                    AlternativeCount = 0,
+                }));
+
+            Assert.AreEqual("AlternativeCount", ex.ParamName);
+            StringAssert.Contains(ex.Message, "greater than zero");
+        }
+
+        [TestMethod]
+        public async Task Route_Response_Throws_For_Invalid_Approaches_Length()
+        {
+            var osrm = CreateOsrmClient("""{"code":"Ok","waypoints":[],"routes":[]}""");
+            var ex = await CaptureExceptionAsync<ArgumentException>(() => osrm.Route(
+                new RouteRequest
+                {
+                    Coordinates = RouteLocations,
+                    Approaches = ["curb"],
+                }));
+
+            Assert.AreEqual("Approaches", ex.ParamName);
+            StringAssert.Contains(ex.Message, "exactly one value per coordinate");
+        }
+
+        [TestMethod]
+        public async Task Match_Response_Throws_For_Invalid_Gaps_Value()
+        {
+            var osrm = CreateOsrmClient("""{"code":"Ok","tracepoints":[],"matchings":[]}""");
+            var ex = await CaptureExceptionAsync<ArgumentException>(() => osrm.Match(
+                new MatchRequest
+                {
+                    Coordinates =
+                    [
+                        new Location(52.542648, 13.393252),
+                        new Location(52.543079, 13.394780),
+                    ],
+                    Gaps = "invalid",
+                }));
+
+            Assert.AreEqual("Gaps", ex.ParamName);
+            StringAssert.Contains(ex.Message, "split");
+        }
+
+        [TestMethod]
+        public async Task Trip_Response_Throws_For_Invalid_Source_Value()
+        {
+            var osrm = CreateOsrmClient("""{"code":"Ok","waypoints":[],"trips":[]}""");
+            var ex = await CaptureExceptionAsync<ArgumentException>(() => osrm.Trip(
+                new TripRequest
+                {
+                    Coordinates = RouteLocations,
+                    Source = "last",
+                }));
+
+            Assert.AreEqual("Source", ex.ParamName);
+            StringAssert.Contains(ex.Message, "any");
+        }
+
+        [TestMethod]
+        public async Task Table_Response_Throws_For_Invalid_FallbackCoordinate()
+        {
+            var osrm = CreateOsrmClient("""{"code":"Ok","durations":[],"sources":[],"destinations":[]}""");
+            var ex = await CaptureExceptionAsync<ArgumentException>(() => osrm.Table(
+                new TableRequest
+                {
+                    Coordinates = RouteLocations,
+                    FallbackCoordinate = "center",
+                }));
+
+            Assert.AreEqual("FallbackCoordinate", ex.ParamName);
+            StringAssert.Contains(ex.Message, "input");
+        }
+
+        [TestMethod]
+        public async Task Table_Response_Throws_For_Invalid_ScaleFactor()
+        {
+            var osrm = CreateOsrmClient("""{"code":"Ok","durations":[],"sources":[],"destinations":[]}""");
+            var ex = await CaptureExceptionAsync<ArgumentOutOfRangeException>(() => osrm.Table(
+                new TableRequest
+                {
+                    Coordinates = RouteLocations,
+                    ScaleFactor = 0,
+                }));
+
+            Assert.AreEqual("ScaleFactor", ex.ParamName);
+            StringAssert.Contains(ex.Message, "greater than zero");
+        }
+
+        [TestMethod]
         public async Task Route_Response_Throws_When_Timeout_Is_Exceeded()
         {
             var osrm = CreateOsrmClient(

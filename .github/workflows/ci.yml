@@ -33,8 +33,18 @@ jobs:
       - name: Pack
         run: dotnet pack Src/Osrm.Client/Osrm.Client.csproj --configuration Release --no-build -p:ContinuousIntegrationBuild=true --output artifacts
 
+      - name: Validate package artifacts
+        run: |
+          ls artifacts/*.nupkg
+          ls artifacts/*.snupkg
+          unzip -l artifacts/*.nupkg | grep -q "lib/net9.0/Osrm.Client.dll"
+          unzip -l artifacts/*.nupkg | grep -q "lib/netstandard2.0/Osrm.Client.dll"
+          unzip -l artifacts/*.nupkg | grep -q "README.md"
+          unzip -l artifacts/*.nupkg | grep -q "LICENSE.md"
+
       - name: Upload package artifacts
         uses: actions/upload-artifact@v4
         with:
           name: nuget-package
           path: artifacts/*
+          if-no-files-found: error

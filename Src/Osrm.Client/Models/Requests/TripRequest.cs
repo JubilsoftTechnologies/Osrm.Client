@@ -90,7 +90,7 @@ namespace Osrm.Client.Models.Requests
         internal override void Validate()
         {
             ValidateCoordinateCount(2);
-            ValidateOptionalParameterLengths();
+            base.Validate();
 
             if (!string.Equals(Source, DefaultSource, StringComparison.Ordinal)
                 && !string.Equals(Source, "first", StringComparison.Ordinal))

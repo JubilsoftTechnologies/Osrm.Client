@@ -6,7 +6,6 @@ on:
       version:
         description: Package version to publish
         required: true
-        default: 4.0.0
 
 permissions:
   contents: read
@@ -38,3 +37,6 @@ jobs:
 
       - name: Push packages to NuGet
         run: dotnet nuget push "artifacts/*.nupkg" --api-key "${{ secrets.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json --skip-duplicate
+
+      - name: Push symbols to NuGet
+        run: dotnet nuget push "artifacts/*.snupkg" --api-key "${{ secrets.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json --skip-duplicate
