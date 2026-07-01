@@ -57,5 +57,11 @@ namespace Osrm.Client.Models.Requests
                 return urlParams;
             }
         }
+
+        internal override void Validate()
+        {
+            base.Validate();
+            ValidateOptionalParameterLength(Timestamps, nameof(Timestamps));
+        }
     }
 }

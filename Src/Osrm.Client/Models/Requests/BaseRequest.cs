@@ -2,8 +2,6 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Osrm.Client.Models.Requests
 {
@@ -46,11 +44,6 @@ namespace Osrm.Client.Models.Requests
         {
             get
             {
-                if (Coordinates == null)
-                {
-                    return string.Empty;
-                }
-
                 if (SendCoordinatesAsPolyline)
                 {
                     var encodedLocs = OsrmPolylineConverter.Encode(Coordinates, 1E5);
@@ -75,6 +68,79 @@ namespace Osrm.Client.Models.Requests
                     .AddParams("hints", Hints);
 
                 return urlParams;
+            }
+        }
+
+        internal virtual void Validate()
+        {
+            ValidateCoordinateCount(1);
+            ValidateOptionalParameterLengths();
+        }
+
+        protected void ValidateCoordinateCount(int minimumCount, int? maximumCount = null)
+        {
+            if (Coordinates is null)
+            {
+                throw new ArgumentNullException(nameof(Coordinates), "Coordinates are required.");
+            }
+
+            if (Coordinates.Any(c => c is null))
+            {
+                throw new ArgumentException("Coordinates cannot contain null values.", nameof(Coordinates));
+            }
+
+            if (Coordinates.Length < minimumCount)
+            {
+                var message = minimumCount == 1
+                    ? "At least one coordinate is required."
+                    : $"At least {minimumCount} coordinates are required.";
+                throw new ArgumentException(message, nameof(Coordinates));
+            }
+
+            if (maximumCount.HasValue && Coordinates.Length > maximumCount.Value)
+            {
+                throw new ArgumentException($"No more than {maximumCount.Value} coordinates are allowed.", nameof(Coordinates));
+            }
+        }
+
+        protected void ValidateOptionalParameterLengths()
+        {
+            ValidateOptionalParameterLength(Bearings, nameof(Bearings));
+            ValidateOptionalParameterLength(Radiuses, nameof(Radiuses));
+            ValidateOptionalParameterLength(Hints, nameof(Hints));
+        }
+
+        protected void ValidateOptionalParameterLength<T>(T[] values, string parameterName)
+        {
+            if (values is null)
+            {
+                throw new ArgumentNullException(parameterName, $"{parameterName} cannot be null.");
+            }
+
+            if (values.Length != 0 && values.Length != Coordinates.Length)
+            {
+                throw new ArgumentException(
+                    $"{parameterName} must either be empty or contain exactly one value per coordinate.",
+                    parameterName);
+            }
+        }
+
+        protected void ValidateCoordinateIndexes(uint[] indexes, string parameterName)
+        {
+            if (indexes is null)
+            {
+                throw new ArgumentNullException(parameterName, $"{parameterName} cannot be null.");
+            }
+
+            foreach (var index in indexes)
+            {
+                if (index >= Coordinates.Length)
+                {
+                    throw new ArgumentOutOfRangeException(
+                        parameterName,
+                        index,
+                        $"{parameterName} contains index {index}, but there are only {Coordinates.Length} coordinates.");
+                }
             }
         }
     }

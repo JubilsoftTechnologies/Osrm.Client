@@ -78,7 +78,7 @@ namespace Osrm.Client.Tests
             Assert.IsTrue(result.Waypoints.Length > 0);
             Assert.IsTrue(result.Routes[0].Legs.Length > 0);
             Assert.AreEqual(52.503033, result.Waypoints[0].Location!.Latitude, 0.000001);
-            Assert.AreEqual(13.420526, result.Waypoints[0].Location.Longitude, 0.000001);
+            Assert.AreEqual(13.420526, result.Waypoints[0].Location!.Longitude, 0.000001);
             Assert.AreEqual(52.503033, result.Routes[0].Legs[0].Steps[0].Maneuver!.Location!.Latitude, 0.000001);
             Assert.AreEqual(13.420526, result.Routes[0].Legs[0].Steps[0].Maneuver!.Location!.Longitude, 0.000001);
         }
@@ -245,30 +245,97 @@ namespace Osrm.Client.Tests
                 """,
                 HttpStatusCode.BadRequest);
 
-            var ex = await CaptureHttpRequestExceptionAsync(() => osrm.Route(RouteLocations));
+            var ex = await CaptureExceptionAsync<HttpRequestException>(() => osrm.Route(RouteLocations));
 
             StringAssert.Contains(ex.Message, "400");
             StringAssert.Contains(ex.Message, "route");
         }
 
-        private static async Task<HttpRequestException> CaptureHttpRequestExceptionAsync(Func<Task> action)
+        [TestMethod]
+        public async Task Route_Response_Throws_For_Too_Few_Coordinates()
+        {
+            var osrm = CreateOsrmClient("""{"code":"Ok","waypoints":[],"routes":[]}""");
+            var ex = await CaptureExceptionAsync<ArgumentException>(() => osrm.Route(new RouteRequest()));
+
+            Assert.AreEqual("Coordinates", ex.ParamName);
+            StringAssert.Contains(ex.Message, "At least 2 coordinates");
+        }
+
+        [TestMethod]
+        public async Task Nearest_Response_Throws_For_Multiple_Coordinates()
+        {
+            var osrm = CreateOsrmClient("""{"code":"Ok","waypoints":[]}""");
+            var ex = await CaptureExceptionAsync<ArgumentException>(() => osrm.Nearest(RouteLocations));
+
+            Assert.AreEqual("Coordinates", ex.ParamName);
+            StringAssert.Contains(ex.Message, "No more than 1 coordinates");
+        }
+
+        [TestMethod]
+        public async Task Match_Response_Throws_For_Mismatched_Timestamps()
+        {
+            var osrm = CreateOsrmClient("""{"code":"Ok","tracepoints":[],"matchings":[]}""");
+            var ex = await CaptureExceptionAsync<ArgumentException>(() => osrm.Match(
+                new MatchRequest
+                {
+                    Coordinates = RouteLocations,
+                    Timestamps = [1],
+                }));
+
+            Assert.AreEqual("Timestamps", ex.ParamName);
+            StringAssert.Contains(ex.Message, "exactly one value per coordinate");
+        }
+
+        [TestMethod]
+        public async Task Table_Response_Throws_For_Invalid_Source_Index()
+        {
+            var osrm = CreateOsrmClient("""{"code":"Ok","durations":[],"sources":[],"destinations":[]}""");
+            var ex = await CaptureExceptionAsync<ArgumentOutOfRangeException>(() => osrm.Table(
+                new TableRequest
+                {
+                    Coordinates = RouteLocations,
+                    Sources = [2],
+                }));
+
+            Assert.AreEqual("Sources", ex.ParamName);
+            StringAssert.Contains(ex.Message, "there are only 2 coordinates");
+        }
+
+        [TestMethod]
+        public async Task Route_Response_Throws_When_Timeout_Is_Exceeded()
+        {
+            var osrm = CreateOsrmClient(
+                """{"code":"Ok","waypoints":[],"routes":[]}""",
+                responseDelay: TimeSpan.FromMilliseconds(200));
+            osrm.Timeout = 10;
+
+            var ex = await CaptureExceptionAsync<TimeoutException>(() => osrm.Route(RouteLocations));
+
+            StringAssert.Contains(ex.Message, "10 ms");
+        }
+
+        private static async Task<TException> CaptureExceptionAsync<TException>(Func<Task> action)
+            where TException : Exception
         {
             try
             {
                 await action();
             }
-            catch (HttpRequestException ex)
+            catch (TException ex)
             {
                 return ex;
             }
 
-            Assert.Fail("Expected an HttpRequestException.");
+            Assert.Fail($"Expected a {typeof(TException).Name}.");
             return null!;
         }
 
-        private static Osrm5x CreateOsrmClient(string responseBody, HttpStatusCode statusCode = HttpStatusCode.OK)
+        private static Osrm5x CreateOsrmClient(
+            string responseBody,
+            HttpStatusCode statusCode = HttpStatusCode.OK,
+            TimeSpan? responseDelay = null)
         {
-            var httpClient = new HttpClient(new StubHttpMessageHandler(responseBody, statusCode));
+            var httpClient = new HttpClient(new StubHttpMessageHandler(responseBody, statusCode, responseDelay));
             return new Osrm5x(httpClient, "https://router.project-osrm.org/");
         }
 
@@ -276,22 +343,29 @@ namespace Osrm.Client.Tests
         {
             private readonly string responseBody;
             private readonly HttpStatusCode statusCode;
+            private readonly TimeSpan responseDelay;
 
-            public StubHttpMessageHandler(string responseBody, HttpStatusCode statusCode)
+            public StubHttpMessageHandler(string responseBody, HttpStatusCode statusCode, TimeSpan? responseDelay)
             {
                 this.responseBody = responseBody;
                 this.statusCode = statusCode;
+                this.responseDelay = responseDelay ?? TimeSpan.Zero;
             }
 
-            protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+            protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
             {
+                if (responseDelay > TimeSpan.Zero)
+                {
+                    await Task.Delay(responseDelay, cancellationToken);
+                }
+
                 var response = new HttpResponseMessage(statusCode)
                 {
                     RequestMessage = request,
                     Content = new StringContent(responseBody, Encoding.UTF8, "application/json"),
                 };
 
-                return Task.FromResult(response);
+                return response;
             }
         }
     }

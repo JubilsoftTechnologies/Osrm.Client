@@ -65,5 +65,11 @@ namespace Osrm.Client.Models.Requests
                 return urlParams;
             }
         }
+
+        internal override void Validate()
+        {
+            ValidateCoordinateCount(2);
+            ValidateOptionalParameterLengths();
+        }
     }
 }
