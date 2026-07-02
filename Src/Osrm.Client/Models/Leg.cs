@@ -1,15 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.Serialization;
-using System.Text;
 using System.Text.Json.Serialization;
-using System.Threading.Tasks;
 
 namespace Osrm.Client.Models
 {
-
-    public class RouteLeg
+    public class RouteLeg : Osrm.Client.IGeometryFormatAware
     {
         [JsonPropertyName("distance")]
         public double Distance { get; set; }
@@ -18,12 +12,23 @@ namespace Osrm.Client.Models
         public double Duration { get; set; }
 
         [JsonPropertyName("steps")]
-        public RouteStep[] Steps { get; set; }
+        public RouteStep[] Steps { get; set; } = Array.Empty<RouteStep>();
 
         [JsonPropertyName("summary")]
-        public string Summary { get; set; }
+        public string Summary { get; set; } = string.Empty;
     
         [JsonPropertyName("weight")]
         public double Weight { get; set; }
+
+        [JsonPropertyName("annotation")]
+        public Annotation? Annotation { get; set; }
+
+        void Osrm.Client.IGeometryFormatAware.SetGeometryFormat(string geometryFormat)
+        {
+            foreach (var step in Steps)
+            {
+                ((Osrm.Client.IGeometryFormatAware)step).SetGeometryFormat(geometryFormat);
+            }
+        }
     }
 }

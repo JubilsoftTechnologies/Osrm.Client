@@ -6,15 +6,20 @@ using System.Threading.Tasks;
 
 namespace Osrm.Client.Models.Requests
 {
-    public class TripRequest : BaseRequest
+    public class TripRequest : BaseRequest, Osrm.Client.IHasGeometryFormat
     {
-        protected const string DefaultGeometries = "polyline";
-        protected const string DefaultOverview = "simplified";
+        private const string DefaultGeometries = "polyline";
+        private const string DefaultOverview = "simplified";
+        private const string DefaultSource = "any";
+        private const string DefaultDestination = "any";
 
         public TripRequest()
         {
             Geometries = DefaultGeometries;
             Overview = DefaultOverview;
+            Roundtrip = true;
+            Source = DefaultSource;
+            Destination = DefaultDestination;
         }
 
         /// <summary>
@@ -26,6 +31,30 @@ namespace Osrm.Client.Models.Requests
         /// Returns additional metadata for each coordinate along the route geometry.
         /// </summary>
         public bool Annotate { get; set; }
+
+        /// <summary>
+        /// Returns additional metadata for each coordinate along the route geometry.
+        /// true, false, nodes, distance, duration, datasources, weight, speed
+        /// </summary>
+        public string? Annotations { get; set; }
+
+        /// <summary>
+        /// Returned route is a roundtrip.
+        /// true (default), false
+        /// </summary>
+        public bool Roundtrip { get; set; }
+
+        /// <summary>
+        /// Controls whether the route starts at any coordinate or the first coordinate.
+        /// any (default), first
+        /// </summary>
+        public string Source { get; set; }
+
+        /// <summary>
+        /// Controls whether the route ends at any coordinate or the last coordinate.
+        /// any (default), last
+        /// </summary>
+        public string Destination { get; set; }
 
         /// <summary>
         /// Returned route geometry format (influences overview and per step)
@@ -46,12 +75,33 @@ namespace Osrm.Client.Models.Requests
                 var urlParams = new List<Tuple<string, string>>(BaseUrlParams);
 
                 urlParams
+                    .AddBoolParameter("roundtrip", Roundtrip, true)
+                    .AddStringParameter("source", Source, () => Source != DefaultSource)
+                    .AddStringParameter("destination", Destination, () => Destination != DefaultDestination)
                     .AddBoolParameter("steps", Steps, false)
-                    .AddBoolParameter("annotate", Annotate, false)
+                    .AddStringParameter("annotations", Annotations ?? (Annotate ? "true" : null))
                     .AddStringParameter("geometries", Geometries, () => Geometries != DefaultGeometries)
                     .AddStringParameter("overview", Overview, () => Overview != DefaultOverview);
 
                 return urlParams;
+            }
+        }
+
+        internal override void Validate()
+        {
+            ValidateCoordinateCount(2);
+            base.Validate();
+
+            if (!string.Equals(Source, DefaultSource, StringComparison.Ordinal)
+                && !string.Equals(Source, "first", StringComparison.Ordinal))
+            {
+                throw new ArgumentException("Source must be either 'any' or 'first'.", nameof(Source));
+            }
+
+            if (!string.Equals(Destination, DefaultDestination, StringComparison.Ordinal)
+                && !string.Equals(Destination, "last", StringComparison.Ordinal))
+            {
+                throw new ArgumentException("Destination must be either 'any' or 'last'.", nameof(Destination));
             }
         }
     }

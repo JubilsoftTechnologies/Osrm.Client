@@ -1,0 +1,42 @@
+name: publish-package
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Package version to publish
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+
+      - name: Restore
+        run: dotnet restore Src/Osrm.Client.sln
+
+      - name: Build
+        run: dotnet build Src/Osrm.Client.sln --configuration Release --no-restore
+
+      - name: Test
+        run: dotnet test Src/Osrm.Client.Tests/Osrm.Client.Tests.csproj --configuration Release --no-build
+
+      - name: Pack
+        run: dotnet pack Src/Osrm.Client/Osrm.Client.csproj --configuration Release --no-build -p:ContinuousIntegrationBuild=true -p:Version=${{ inputs.version }} --output artifacts
+
+      - name: Push packages to NuGet
+        run: dotnet nuget push "artifacts/*.nupkg" --api-key "${{ secrets.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json --skip-duplicate
+
+      - name: Push symbols to NuGet
+        run: dotnet nuget push "artifacts/*.snupkg" --api-key "${{ secrets.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json --skip-duplicate

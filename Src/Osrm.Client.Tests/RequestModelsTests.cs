@@ -12,10 +12,13 @@ namespace Osrm.Client.Tests
         {
             var r = new RouteRequest();
             Assert.AreEqual<bool>(false, r.Alternative);
+            Assert.IsNull(r.AlternativeCount);
             Assert.AreEqual<bool>(false, r.Steps);
+            Assert.IsNull(r.Annotations);
             Assert.AreEqual<string>("polyline", r.Geometries);
             Assert.AreEqual<string>("simplified", r.Overview);
             Assert.AreEqual<string>("default", r.ContinueStraight);
+            Assert.IsNotNull(r.Waypoints);
         }
 
         [TestMethod]
@@ -24,6 +27,10 @@ namespace Osrm.Client.Tests
             var r = new TableRequest();
             Assert.IsNotNull(r.Sources);
             Assert.IsNotNull(r.Destinations);
+            Assert.AreEqual<string>("duration", r.Annotations);
+            Assert.AreEqual<string>("input", r.FallbackCoordinate);
+            Assert.IsNull(r.FallbackSpeed);
+            Assert.IsNull(r.ScaleFactor);
         }
 
         [TestMethod]
@@ -31,9 +38,13 @@ namespace Osrm.Client.Tests
         {
             var r = new MatchRequest();
             Assert.AreEqual<bool>(false, r.Steps);
+            Assert.IsNull(r.Annotations);
             Assert.AreEqual<string>("polyline", r.Geometries);
             Assert.AreEqual<string>("simplified", r.Overview);
+            Assert.AreEqual<string>("split", r.Gaps);
+            Assert.AreEqual<bool>(false, r.Tidy);
             Assert.IsNotNull(r.Timestamps);
+            Assert.IsNotNull(r.Waypoints);
         }
 
         [TestMethod]
@@ -62,7 +73,11 @@ namespace Osrm.Client.Tests
         {
             var r = new TripRequest();
             Assert.AreEqual<bool>(false, r.Annotate);
+            Assert.IsNull(r.Annotations);
             Assert.AreEqual<bool>(false, r.Steps);
+            Assert.AreEqual<bool>(true, r.Roundtrip);
+            Assert.AreEqual<string>("any", r.Source);
+            Assert.AreEqual<string>("any", r.Destination);
             Assert.AreEqual<string>("polyline", r.Geometries);
             Assert.AreEqual<string>("simplified", r.Overview);
         }
@@ -78,7 +93,11 @@ namespace Osrm.Client.Tests
             Assert.IsNotNull(r.Bearings);
             Assert.IsNotNull(r.Radiuses);
             Assert.IsNotNull(r.Hints);
-
+            Assert.AreEqual<bool>(true, r.GenerateHints);
+            Assert.IsNotNull(r.Approaches);
+            Assert.IsNotNull(r.Exclude);
+            Assert.AreEqual<string>("default", r.Snapping);
+            Assert.AreEqual<bool>(false, r.SkipWaypoints);
         }
     }
 }

@@ -2,19 +2,23 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Osrm.Client.Models.Requests
 {
     public abstract class BaseRequest
     {
+        private const string DefaultSnapping = "default";
+
         public BaseRequest()
         {
-            Coordinates = new Location[0];
-            Bearings = new Bearing[0];
-            Radiuses = new int[0];
-            Hints = new string[0];
+            Coordinates = Array.Empty<Location>();
+            Bearings = Array.Empty<Bearing>();
+            Radiuses = Array.Empty<int>();
+            Hints = Array.Empty<string>();
+            Approaches = Array.Empty<string>();
+            Exclude = Array.Empty<string>();
+            GenerateHints = true;
+            Snapping = DefaultSnapping;
         }
 
         /// <summary>
@@ -42,25 +46,46 @@ namespace Osrm.Client.Models.Requests
         /// </summary>
         public string[] Hints { get; set; }
 
+        /// <summary>
+        /// Adds hint generation to the response.
+        /// true (default), false
+        /// </summary>
+        public bool GenerateHints { get; set; }
+
+        /// <summary>
+        /// Restricts the direction on the road network at a waypoint relative to the input coordinate.
+        /// curb, opposite, unrestricted (default)
+        /// </summary>
+        public string[] Approaches { get; set; }
+
+        /// <summary>
+        /// Additive list of classes to avoid.
+        /// </summary>
+        public string[] Exclude { get; set; }
+
+        /// <summary>
+        /// Controls whether snapping avoids is_startpoint edges or allows any edge.
+        /// default (default), any
+        /// </summary>
+        public string Snapping { get; set; }
+
+        /// <summary>
+        /// Removes waypoints from the response.
+        /// true, false (default)
+        /// </summary>
+        public bool SkipWaypoints { get; set; }
+
         public string CoordinatesUrlPart
         {
             get
             {
-                if (Coordinates == null)
-                {
-                    return string.Empty;
-                }
-
                 if (SendCoordinatesAsPolyline)
                 {
                     var encodedLocs = OsrmPolylineConverter.Encode(Coordinates, 1E5);
                     return "polyline(" + encodedLocs + ")";
                 }
-                else
-                {
-                    return string.Join(";", Coordinates.Select(x => x.Longitude.ToString("F6", CultureInfo.InvariantCulture)
-                            + "," + x.Latitude.ToString("F6", CultureInfo.InvariantCulture)));
-                }
+                return string.Join(";", Coordinates.Select(x => x.Longitude.ToString("F6", CultureInfo.InvariantCulture)
+                        + "," + x.Latitude.ToString("F6", CultureInfo.InvariantCulture)));
             }
         }
 
@@ -75,9 +100,104 @@ namespace Osrm.Client.Models.Requests
                 urlParams
                     .AddParams("bearings", Bearings.Select(x => x.Item1 + "," + x.Item2).ToArray())
                     .AddParams("radiuses", Radiuses.Select(x => x.ToString()).ToArray())
-                    .AddParams("hints", Hints);
+                    .AddParams("hints", Hints)
+                    .AddBoolParameter("generate_hints", GenerateHints, true)
+                    .AddParams("approaches", Approaches)
+                    .AddCsvParameter("exclude", Exclude)
+                    .AddStringParameter("snapping", Snapping, () => Snapping != DefaultSnapping)
+                    .AddBoolParameter("skip_waypoints", SkipWaypoints, false);
 
                 return urlParams;
+            }
+        }
+
+        internal virtual void Validate()
+        {
+            ValidateCoordinateCount(1);
+            ValidateOptionalParameterLengths();
+
+            if (Approaches is null)
+            {
+                throw new ArgumentNullException(nameof(Approaches), "Approaches cannot be null.");
+            }
+
+            ValidateOptionalParameterLength(Approaches, nameof(Approaches));
+
+            if (Exclude is null)
+            {
+                throw new ArgumentNullException(nameof(Exclude), "Exclude cannot be null.");
+            }
+
+            if (string.IsNullOrWhiteSpace(Snapping))
+            {
+                throw new ArgumentException("Snapping cannot be null or empty.", nameof(Snapping));
+            }
+        }
+
+        protected void ValidateCoordinateCount(int minimumCount, int? maximumCount = null)
+        {
+            if (Coordinates is null)
+            {
+                throw new ArgumentNullException(nameof(Coordinates), "Coordinates are required.");
+            }
+
+            if (Coordinates.Any(c => c is null))
+            {
+                throw new ArgumentException("Coordinates cannot contain null values.", nameof(Coordinates));
+            }
+
+            if (Coordinates.Length < minimumCount)
+            {
+                var message = minimumCount == 1
+                    ? "At least one coordinate is required."
+                    : $"At least {minimumCount} coordinates are required.";
+                throw new ArgumentException(message, nameof(Coordinates));
+            }
+
+            if (maximumCount.HasValue && Coordinates.Length > maximumCount.Value)
+            {
+                throw new ArgumentException($"No more than {maximumCount.Value} coordinates are allowed.", nameof(Coordinates));
+            }
+        }
+
+        protected void ValidateOptionalParameterLengths()
+        {
+            ValidateOptionalParameterLength(Bearings, nameof(Bearings));
+            ValidateOptionalParameterLength(Radiuses, nameof(Radiuses));
+            ValidateOptionalParameterLength(Hints, nameof(Hints));
+        }
+
+        protected void ValidateOptionalParameterLength<T>(T[] values, string parameterName)
+        {
+            if (values is null)
+            {
+                throw new ArgumentNullException(parameterName, $"{parameterName} cannot be null.");
+            }
+
+            if (values.Length != 0 && values.Length != Coordinates.Length)
+            {
+                throw new ArgumentException(
+                    $"{parameterName} must either be empty or contain exactly one value per coordinate.",
+                    parameterName);
+            }
+        }
+
+        protected void ValidateCoordinateIndexes(uint[] indexes, string parameterName)
+        {
+            if (indexes is null)
+            {
+                throw new ArgumentNullException(parameterName, $"{parameterName} cannot be null.");
+            }
+
+            foreach (var index in indexes)
+            {
+                if (index >= Coordinates.Length)
+                {
+                    throw new ArgumentOutOfRangeException(
+                        parameterName,
+                        index,
+                        $"{parameterName} contains index {index}, but there are only {Coordinates.Length} coordinates.");
+                }
             }
         }
     }

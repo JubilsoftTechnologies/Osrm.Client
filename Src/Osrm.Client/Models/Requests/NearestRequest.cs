@@ -8,7 +8,7 @@ namespace Osrm.Client.Models.Requests
 {
     public class NearestRequest : BaseRequest
     {
-        protected const uint DefaultNumber = 1;
+        private const uint DefaultNumber = 1;
 
         public NearestRequest()
         {
@@ -32,6 +32,12 @@ namespace Osrm.Client.Models.Requests
 
                 return urlParams;
             }
+        }
+
+        internal override void Validate()
+        {
+            ValidateCoordinateCount(1, 1);
+            ValidateOptionalParameterLengths();
         }
     }
 }

@@ -9,16 +9,24 @@ using System.Threading.Tasks;
 namespace Osrm.Client.Models.Responses
 {
 
-    public class MatchResponse : BaseResponse
+    public class MatchResponse : BaseResponse, Osrm.Client.IGeometryFormatAware
     {
         /// <summary>
         /// Array of Ẁaypoint objects representing all points of the trace in order.
         /// If the trace point was ommited by map matching because it is an outlier, the entry will be null.
         /// </summary>
         [JsonPropertyName("tracepoints")]
-        public Waypoint[] Tracepoints { get; set; }
+        public Waypoint?[] Tracepoints { get; set; } = Array.Empty<Waypoint?>();
 
         [JsonPropertyName("matchings")]
-        public Route[] Matchings { get; set; }
+        public Route[] Matchings { get; set; } = Array.Empty<Route>();
+
+        void Osrm.Client.IGeometryFormatAware.SetGeometryFormat(string geometryFormat)
+        {
+            foreach (var route in Matchings)
+            {
+                ((Osrm.Client.IGeometryFormatAware)route).SetGeometryFormat(geometryFormat);
+            }
+        }
     }
 }

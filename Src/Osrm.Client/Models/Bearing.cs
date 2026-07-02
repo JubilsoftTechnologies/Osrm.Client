@@ -8,8 +8,8 @@ namespace Osrm.Client.Models
 {
     public class Bearing
     {
-        protected int item1;
-        protected int item2;
+        private int item1;
+        private int item2;
 
         /// <summary>
         /// value integer 0 .. 360
@@ -24,7 +24,7 @@ namespace Osrm.Client.Models
             {
                 if (value < 0 || value > 360)
                 {
-                    throw new ArgumentOutOfRangeException("integer 0 .. 360");
+                    throw new ArgumentOutOfRangeException(nameof(value), value, "Bearing must be in the range 0..360.");
                 }
 
                 item1 = value;
@@ -44,7 +44,7 @@ namespace Osrm.Client.Models
             {
                 if (value < 0 || value > 180)
                 {
-                    throw new ArgumentOutOfRangeException("integer 0 .. 180");
+                    throw new ArgumentOutOfRangeException(nameof(value), value, "Bearing range must be in the range 0..180.");
                 }
 
                 item2 = value;

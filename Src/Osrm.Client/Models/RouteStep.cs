@@ -1,16 +1,13 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.Serialization;
-using System.Text;
+using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Threading.Tasks;
 
 namespace Osrm.Client.Models
 {
-
-    public class RouteStep
+    public class RouteStep : Osrm.Client.IGeometryFormatAware
     {
+        private string geometryFormat = "polyline";
+
         [JsonPropertyName("distance")]
         public double Distance { get; set; }
 
@@ -18,30 +15,60 @@ namespace Osrm.Client.Models
         public double Duration { get; set; }
 
         [JsonPropertyName("geometry")]
-        public string GeometryStr { get; set; }
+        public JsonElement RawGeometry { get; set; }
 
+        [JsonIgnore]
+        public string? GeometryStr => Osrm.Client.OsrmGeometryParser.GetEncodedGeometry(RawGeometry);
+
+        [JsonIgnore]
         public Location[] Geometry
         {
             get
             {
-                if (string.IsNullOrEmpty(GeometryStr))
-                {
-                    return new Location[0];
-                }
-
-                return OsrmPolylineConverter.Decode(GeometryStr, 1E5)
-                    .ToArray();
+                return Osrm.Client.OsrmGeometryParser.GetLocations(RawGeometry, geometryFormat);
             }
         }
 
+        [JsonPropertyName("weight")]
+        public double Weight { get; set; }
+
         [JsonPropertyName("maneuver")]
-        public StepManeuver Maneuver { get; set; }
+        public StepManeuver? Maneuver { get; set; }
+
+        [JsonPropertyName("ref")]
+        public string? Ref { get; set; }
+
+        [JsonPropertyName("pronunciation")]
+        public string? Pronunciation { get; set; }
+
+        [JsonPropertyName("destinations")]
+        public string? Destinations { get; set; }
+
+        [JsonPropertyName("exits")]
+        public string? Exits { get; set; }
 
         [JsonPropertyName("mode")]
-        public string Mode { get; set; }
+        public string? Mode { get; set; }
 
         [JsonPropertyName("name")]
-        public string Name { get; set; }
+        public string? Name { get; set; }
+
+        [JsonPropertyName("intersections")]
+        public Intersection[] Intersections { get; set; } = Array.Empty<Intersection>();
+
+        [JsonPropertyName("rotary_name")]
+        public string? RotaryName { get; set; }
+
+        [JsonPropertyName("rotary_pronunciation")]
+        public string? RotaryPronunciation { get; set; }
+
+        [JsonPropertyName("driving_side")]
+        public string? DrivingSide { get; set; }
+
+        void Osrm.Client.IGeometryFormatAware.SetGeometryFormat(string geometryFormat)
+        {
+            this.geometryFormat = geometryFormat;
+        }
 
     }
 }

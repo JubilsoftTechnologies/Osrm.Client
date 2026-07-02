@@ -30,16 +30,18 @@ namespace Osrm.Client.Models
         public int Exit { get; set; }
 
         [JsonPropertyName("location")]
-        public double[] LocationArr { get; set; }
+        public double[]? LocationArr { get; set; }
 
-        public Location Location
+        public Location? Location
         {
             get
             {
                 if (LocationArr == null)
+                {
                     return null;
+                }
 
-                return new Location(LocationArr[0], LocationArr[1]);
+                return new Location(LocationArr[1], LocationArr[0]);
             }
         }
 
@@ -47,12 +49,12 @@ namespace Osrm.Client.Models
         /// A string indicating the type of maneuver. new identifiers might be introduced without API change Types unknown to the client should be handled like the turn type, the existance of correct modifier values is guranteed.
         /// </summary>
         [JsonPropertyName("type")]
-        public string Type { get; set; }
+        public string? Type { get; set; }
 
         /// <summary>
         /// An optional string indicating the direction change of the maneuver.
         /// </summary>
         [JsonPropertyName("modifier")]
-        public string Modifier { get; set; }
+        public string? Modifier { get; set; }
     }
 }

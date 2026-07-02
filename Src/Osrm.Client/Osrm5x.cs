@@ -5,6 +5,7 @@ using Osrm.Client.Models.Responses;
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Osrm.Client
@@ -15,6 +16,11 @@ namespace Osrm.Client
         /// Modern HTTP client implementation
         /// </summary>
         private readonly HttpClient Client;
+        private const string RouteServiceName = "route";
+        private const string NearestServiceName = "nearest";
+        private const string TableServiceName = "table";
+        private const string MatchServiceName = "match";
+        private const string TripServiceName = "trip";
 
         /// <summary>
         /// Url of OSRM server
@@ -36,13 +42,6 @@ namespace Osrm.Client
         /// </summary>
         public int? Timeout { get; set; }
 
-        protected readonly string RouteServiceName = "route";
-        protected readonly string NearestServiceName = "nearest";
-        protected readonly string TableServiceName = "table";
-        protected readonly string MatchServiceName = "match";
-        protected readonly string TripServiceName = "trip";
-        protected readonly string TileServiceName = "tile";
-
         /// <summary>
         /// Constructor
         /// </summary>
@@ -52,7 +51,7 @@ namespace Osrm.Client
         /// <param name="profile"></param>
         public Osrm5x(HttpClient client, string url = "", string version = "v1", string profile = "driving")
         {
-            Client = client;
+            Client = client ?? throw new ArgumentNullException(nameof(client));
             Url = url;
             Version = version;
             Profile = profile;
@@ -213,26 +212,90 @@ namespace Osrm.Client
             return await Send<TripResponse>(TripServiceName, requestParams);
         }
 
-        protected async Task<T> Send<T>(string service, BaseRequest request) //string coordinatesStr, List<Tuple<string, string>> urlParams)
+        protected async Task<T> Send<T>(string service, BaseRequest request)
+            where T : class
         {
+            if (request is null)
+            {
+                throw new ArgumentNullException(nameof(request));
+            }
+
+            request.Validate();
+
+            if (string.IsNullOrWhiteSpace(Url))
+            {
+                throw new InvalidOperationException("An OSRM server URL must be configured before sending a request.");
+            }
+
+            if (string.IsNullOrWhiteSpace(Version))
+            {
+                throw new InvalidOperationException("An OSRM API version must be configured before sending a request.");
+            }
+
+            if (string.IsNullOrWhiteSpace(Profile))
+            {
+                throw new InvalidOperationException("An OSRM routing profile must be configured before sending a request.");
+            }
+
+            if (Timeout.HasValue && Timeout.Value <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(Timeout), Timeout.Value, "Timeout must be greater than zero.");
+            }
+
             var coordinatesStr = request.CoordinatesUrlPart;
             List<Tuple<string, string>> urlParams = request.UrlParams;
             var fullUrl = OsrmRequestBuilder.GetUrl(Url, service, Version, Profile, coordinatesStr, urlParams);
+            using var timeoutCts = CreateTimeoutCancellationTokenSource();
 
             try
             {
-                string responseBody = await Client.GetStringAsync(fullUrl);
+                using var response = await Client.GetAsync(fullUrl, timeoutCts?.Token ?? CancellationToken.None).ConfigureAwait(false);
+                var responseBody = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
-                return await Task.FromResult(JsonSerializer.Deserialize<T>(responseBody));
+                if (!response.IsSuccessStatusCode)
+                {
+#if NET9_0_OR_GREATER
+                    throw new HttpRequestException(
+                        $"OSRM request to '{fullUrl}' failed with status code {(int)response.StatusCode} ({response.StatusCode}). Response body: {responseBody}",
+                        null,
+                        response.StatusCode);
+#else
+                    throw new HttpRequestException(
+                        $"OSRM request to '{fullUrl}' failed with status code {(int)response.StatusCode} ({response.StatusCode}). Response body: {responseBody}");
+#endif
+                }
+
+                var result = JsonSerializer.Deserialize<T>(responseBody)
+                    ?? throw new JsonException($"OSRM response for '{fullUrl}' could not be deserialized into {typeof(T).Name}.");
+
+                ApplyGeometryFormat(result, request);
+                return result;
             }
-            catch (HttpRequestException e)
+            catch (OperationCanceledException ex) when (timeoutCts?.IsCancellationRequested == true)
             {
-                Console.WriteLine("\nException Caught!");
-                Console.WriteLine("Message :{0} ", e.Message);
-                throw;
+                throw new TimeoutException($"OSRM request to '{fullUrl}' timed out after {Timeout!.Value} ms.", ex);
             }
-
         }
 
+        private CancellationTokenSource? CreateTimeoutCancellationTokenSource()
+        {
+            if (!Timeout.HasValue)
+            {
+                return null;
+            }
+
+            return new CancellationTokenSource(TimeSpan.FromMilliseconds(Timeout.Value));
+        }
+
+        private static void ApplyGeometryFormat<T>(T response, BaseRequest request)
+            where T : class
+        {
+            if (response is not IGeometryFormatAware geometryAware || request is not IHasGeometryFormat geometryRequest)
+            {
+                return;
+            }
+
+            geometryAware.SetGeometryFormat(geometryRequest.Geometries);
+        }
     }
 }

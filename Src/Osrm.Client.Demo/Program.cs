@@ -5,23 +5,23 @@ using Osrm.Client.Models.Requests;
 
 namespace Osrm.Client.Demo
 {
-    class Program
+    internal static class Program
     {
         public static string OsrmUrl = "http://router.project-osrm.org/";
 
-        private static void Main(string[] args)
+        private static async Task Main(string[] args)
         {
             using HttpClient client = new HttpClient();
 
             var osrm5x = new Osrm5x(client, OsrmUrl);
-            Route5x(osrm5x).GetAwaiter().GetResult();
-            Nearest5x(osrm5x).GetAwaiter().GetResult();
-            Table5x(osrm5x).GetAwaiter().GetResult();
-            Match5x(osrm5x).GetAwaiter().GetResult();
-            Trip5x(osrm5x).GetAwaiter().GetResult();
+            await Route5x(osrm5x);
+            await Nearest5x(osrm5x);
+            await Table5x(osrm5x);
+            await Match5x(osrm5x);
+            await Trip5x(osrm5x);
         }
 
-        private async static Task Route5x(Osrm5x osrm)
+        private static async Task Route5x(Osrm5x osrm)
         {
             var locations = new Location[] {
                 new Location(52.503033, 13.420526),
@@ -44,12 +44,12 @@ namespace Osrm.Client.Demo
             var instructions3 = result2.Routes[0].Legs[0].Steps;
         }
 
-        private async static Task Nearest5x(Osrm5x osrm)
+        private static async Task Nearest5x(Osrm5x osrm)
         {
             var result = await osrm.Nearest(new Location(52.4224, 13.333086));
         }
 
-        private async static Task Table5x(Osrm5x osrm)
+        private static async Task Table5x(Osrm5x osrm)
         {
             var locations = new Location[] {
                 new Location(52.517037, 13.388860),
@@ -81,7 +81,7 @@ namespace Osrm.Client.Demo
             });
         }
 
-        private async static Task Match5x(Osrm5x osrm)
+        private static async Task Match5x(Osrm5x osrm)
         {
             var locations = new Location[] {
                 new Location(52.517037, 13.388860),
@@ -97,7 +97,7 @@ namespace Osrm.Client.Demo
             var result = await osrm.Match(request);
         }
 
-        private async static Task Trip5x(Osrm5x osrm)
+        private static async Task Trip5x(Osrm5x osrm)
         {
             var locations = new Location[] {
                 new Location(52.503033, 13.420526),
